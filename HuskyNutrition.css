@@ -1,0 +1,145 @@
+:root {
+    --bg-color: #121212; /* Fond noir profond */
+    --card-color: #1e1e1e; /* Fond des cartes/éléments */
+    --text-color: #e0e0e0; /* Texte clair */
+    --primary-color: #2196F3; /* Bleu standard Android */
+    --accent-color: #03A9F4;
+    --danger-color: #f44336;
+    --success-color: #4CAF50;
+}
+
+* { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+header {
+    background-color: var(--card-color);
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+h1, h2, h3 { margin: 0; font-weight: 400; }
+h1 { font-size: 1.2rem; color: var(--primary-color); text-transform: uppercase; letter-spacing: 2px; }
+
+/* Gestion des Vues (SPA) */
+section.view {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.3s;
+    padding-bottom: 50px;
+}
+section.view.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Dashboard UI */
+.dashboard { text-align: center; margin-bottom: 20px; }
+
+.calories-circle {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 20px auto;
+}
+
+.circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 250px; }
+.circle-bg { fill: none; stroke: #333; stroke-width: 2.5; }
+.circle { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke: var(--primary-color); transition: stroke-dasharray 0.5s ease; }
+.circle-content {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column;
+}
+#display-remaining-cal { font-size: 2rem; font-weight: bold; }
+
+.macros-container { display: flex; justify-content: space-between; margin-top: 20px; }
+.macro-box { width: 32%; background: var(--card-color); padding: 10px; border-radius: 8px; text-align: center; font-size: 0.8rem; }
+progress { width: 100%; height: 5px; margin: 5px 0; }
+
+/* Menu Grid */
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.btn-menu {
+    background-color: var(--card-color);
+    color: var(--text-color);
+    border: 1px solid #333;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-menu:active { background-color: #333; }
+
+/* Form Elements */
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #aaa; }
+input, select {
+    width: 100%; padding: 12px;
+    background: var(--card-color);
+    border: 1px solid #333;
+    color: white;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+/* Boutons */
+.btn-back { background: none; border: none; color: #aaa; margin-bottom: 15px; cursor: pointer; font-size: 1rem; }
+.btn-submit { width: 100%; background: var(--primary-color); color: white; border: none; padding: 15px; border-radius: 5px; font-size: 1.1rem; margin-top: 10px; }
+.btn-action { background: #333; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; }
+.btn-small { background: #333; color: #aaa; border: none; padding: 8px 15px; border-radius: 4px; font-size: 0.8rem; }
+
+/* Liste de résultats de recherche */
+.results-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+.result-item {
+    background: var(--card-color);
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+}
+.result-item:hover { background: #333; }
+
+/* Contrôles de données (Import/Export) */
+.data-controls { margin-top: 30px; display: flex; justify-content: space-around; }
+
+/* Spécifique au Créateur de Recette */
+.card-highlight {
+    background-color: #262626;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #444;
+}
+
+.draft-list { margin-bottom: 20px; }
+.draft-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px; border-bottom: 1px solid #333; font-size: 0.9rem;
+}
+.draft-item span { color: #aaa; font-size: 0.8rem; }
+.btn-remove {
+    background: var(--danger-color); color: white; border: none;
+    border-radius: 4px; padding: 2px 8px; margin-left: 10px;
+    cursor: pointer;
+}
+
+.macro-summary {
+    background: var(--primary-color); color: white;
+    padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px;
+}
+.macro-summary p { font-weight: bold; margin: 0 0 5px 0; font-size: 1.1rem; }
+
+#all-foods-container .result-item {
+    padding: 12px;
+}
+/* Style pour différencier visuellement les aliments de la liste complète */
+#all-foods-container strong {
+    color: var(--primary-color);
+}
+
