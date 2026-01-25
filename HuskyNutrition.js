@@ -157,14 +157,17 @@ function loadDataLocally() {
     if (saved) {
         try { 
             const parsed = JSON.parse(saved);
-            // Fusionner avec le defaultState pour récupérer dailyLog s'il manque
             appState = { ...defaultState, ...parsed };
-            // Sécurité : s'assurer que dailyLog est un tableau
-            if(!Array.isArray(appState.dailyLog)) appState.dailyLog = [];
+            
+            // CORRECTION CRITIQUE : Si dailyLog n'existe pas, on le crée
+            if (!appState.dailyLog || !Array.isArray(appState.dailyLog)) {
+                appState.dailyLog = [];
+            }
         }
         catch(e) { console.error("Données corrompues", e); }
     }
 }
+
 
 function checkDateReset() {
     const today = new Date().toLocaleDateString('fr-CA');
@@ -212,8 +215,15 @@ function renderDailyLog() {
     const container = document.getElementById('daily-log-container');
     container.innerHTML = "";
     
+    // Sécurité supplémentaire
+    if (!appState.dailyLog) appState.dailyLog = [];
+
     if (appState.dailyLog.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#666;'>Rien mangé aujourd'hui !</p>";
+        container.innerHTML = `
+            <div style="text-align:center; padding: 20px; color:#666;">
+                <p>Aucune entrée enregistrée aujourd'hui.</p>
+                <small>Les aliments ajoutés apparaîtront ici.</small>
+            </div>`;
         document.getElementById('journal-total-display').innerText = "0 kcal";
         return;
     }
@@ -225,15 +235,19 @@ function renderDailyLog() {
         
         const div = document.createElement('div');
         div.className = 'result-item';
+        // On évite les undefined si une vieille donnée traîne
+        const k = Math.round(item.k || 0);
+        const n = item.n || "Aliment inconnu";
+        
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <strong>${item.n}</strong>
-                    <div style="font-size:0.8rem; color:#aaa;">
-                        ${Math.round(item.k)} kcal (P:${Math.round(item.p)} G:${Math.round(item.c)} L:${Math.round(item.f)})
+                <div style="flex-grow:1;">
+                    <strong style="color: white;">${n}</strong>
+                    <div style="font-size:0.8rem; color:#aaa; margin-top:2px;">
+                        ${k} kcal <span style="font-size:0.75rem; opacity:0.7">(P:${Math.round(item.p||0)} G:${Math.round(item.c||0)} L:${Math.round(item.f||0)})</span>
                     </div>
                 </div>
-                <button class="btn-small" style="background:var(--danger-color); color:white;" onclick="deleteDailyEntry(${realIndex})">🗑️</button>
+                <button class="btn-small" style="background:var(--danger-color); color:white; min-width:40px;" onclick="deleteDailyEntry(${realIndex})">🗑️</button>
             </div>
         `;
         container.appendChild(div);
@@ -241,6 +255,7 @@ function renderDailyLog() {
 
     document.getElementById('journal-total-display').innerText = `${Math.round(appState.consumed.kcal)} kcal`;
 }
+
 
 function deleteDailyEntry(index) {
     if(!confirm("Supprimer cette entrée ?")) return;
@@ -603,3 +618,4 @@ function importData(inp) {
     r.onload = e => { try { appState = JSON.parse(e.target.result); checkDateReset(); saveDataLocally(); updateUI(); alert("Chargé!"); } catch(x){alert("Erreur fichier");} };
     r.readAsText(f);
 }
+
