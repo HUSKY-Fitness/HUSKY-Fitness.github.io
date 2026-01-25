@@ -407,52 +407,56 @@ function fetchOpenFoodFacts(code) {
     
     const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
     
-    console.log("Fetching:", url); // Aide au debug
-
     fetch(url)
-    .then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
-        // On vérifie si on a un produit et un nom, peu importe le status code exact de l'API
-        if (data.product && (data.product.product_name || data.product.product_name_fr)) {
-            
-            const p = data.product;
-            
-            // Sécurisation des valeurs (parfois undefined)
-            const name = p.product_name_fr || p.product_name || "Produit scanné";
-            const nutriments = p.nutriments || {};
+        // 1. Vérification : A-t-on trouvé un produit ?
+        if (!data || data.status === 0 || !data.product) {
+            alert("Produit inconnu dans la base OpenFoodFacts.");
+            showView('scanner-view');
+            return; // On arrête là
+        }
 
-            scannedFoodTemp = {
-                n: name,
-                p: nutriments.proteins_100g || nutriments.proteins || 0,
-                c: nutriments.carbohydrates_100g || nutriments.carbohydrates || 0,
-                f: nutriments.fat_100g || nutriments.fat || 0
-            };
-            
-            // Mise à jour de l'UI
+        const p = data.product;
+        // 2. Sécurisation : On s'assure que l'objet nutriments existe, sinon objet vide
+        const nuts = p.nutriments || {};
+
+        // 3. Extraction des données avec valeurs par défaut (0 si absent)
+        // On force la conversion en nombre (parseFloat) pour éviter les bugs de calculs
+        const valP = parseFloat(nuts.proteins_100g || nuts.proteins || 0);
+        const valC = parseFloat(nuts.carbohydrates_100g || nuts.carbohydrates || 0);
+        const valF = parseFloat(nuts.fat_100g || nuts.fat || 0);
+        
+        // Nom du produit (Français, sinon Anglais, sinon defaut)
+        const name = p.product_name_fr || p.product_name || "Produit scanné";
+
+        // 4. Mise à jour de la variable globale
+        scannedFoodTemp = {
+            n: name,
+            p: valP,
+            c: valC,
+            f: valF
+        };
+
+        // 5. Mise à jour de l'affichage (dans un bloc try pour éviter de déclencher le catch global)
+        try {
             document.getElementById('scan-match-name').innerText = scannedFoodTemp.n;
             document.getElementById('scan-match-macros').innerText = 
-                `P: ${scannedFoodTemp.p}g | G: ${scannedFoodTemp.c}g | L: ${scannedFoodTemp.f}g`;
+                `P: ${Math.round(scannedFoodTemp.p)}g | G: ${Math.round(scannedFoodTemp.c)}g | L: ${Math.round(scannedFoodTemp.f)}g`;
             
             showView('scan-result-view');
-            
-        } else {
-            // Vrai cas d'échec : pas de produit dans la réponse
-            alert("Produit introuvable (Code barre inconnu)");
-            showView('scanner-view');
+        } catch (displayError) {
+            console.error("Erreur d'affichage :", displayError);
         }
     })
     .catch(err => {
-        console.error("Erreur Fetch:", err);
-        // On n'affiche l'alerte que si c'est une vraie erreur réseau, pas une erreur de parsing
-        alert("Erreur de communication avec OpenFoodFacts. Vérifiez votre connexion.");
+        console.error("Erreur Fetch complète :", err);
+        // On n'affiche l'alerte que si c'est une vraie erreur réseau
+        alert("Problème de connexion ou API indisponible.");
         showView('scanner-view');
     });
 }
+
 
 
 function scanActionEat() {
@@ -522,4 +526,5 @@ function importData(inp) {
     r.onload = e => { try { appState = JSON.parse(e.target.result); checkDateReset(); saveDataLocally(); updateUI(); alert("Chargé!"); } catch(x){alert("Erreur fichier");} };
     r.readAsText(f);
 }
+
 
