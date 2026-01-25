@@ -2,25 +2,22 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport optimisé pour Android/Mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Husky Nutrition</title>
     <link rel="stylesheet" href="HuskyNutrition.css">
-    <!-- Librairie externe pour le scan de code-barres -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 
-    <!-- En-tête -->
-    <header>
+    <!-- En-tête Cliquable -->
+    <header onclick="showView('home-view')" style="cursor: pointer;">
         <h1>Husky Nutrition</h1>
     </header>
 
-    <!-- 1. PAGE D'ACCUEIL (DASHBOARD) -->
+    <!-- 1. PAGE D'ACCUEIL -->
     <section id="home-view" class="view active">
         <div class="dashboard">
             <h2>Résumé Journalier</h2>
-            <!-- Cercle de progression des calories -->
             <div class="calories-circle">
                 <div class="circle-content">
                     <span id="display-remaining-cal">0</span>
@@ -33,7 +30,6 @@
             </div>
             <p class="total-target">Objectif : <span id="display-target-cal">0</span> kcal</p>
 
-            <!-- Barres des Macros -->
             <div class="macros-container">
                 <div class="macro-box">
                     <span>Prot.</span>
@@ -53,17 +49,16 @@
             </div>
         </div>
 
-        <!-- Menu Principal -->
+        <!-- Menu Principal (Ordre modifié) -->
         <div class="menu-grid">
             <button class="btn-menu" onclick="showView('tracker-view')">🍽️ J'ai mangé</button>
-            <button class="btn-menu" onclick="showView('calc-view')">🧮 Calculer Besoins</button>
+            <button class="btn-menu" onclick="showView('alcohol-view')">🍷 Alcool</button> <!-- Inversé -->
             <button class="btn-menu" onclick="showView('recipes-view'); renderRecipesList();">👨‍🍳 Recettes</button>
             <button class="btn-menu" onclick="showView('foods-view'); renderAllFoods();">🍎 Mes Aliments</button>
             <button class="btn-menu" onclick="showView('scanner-view')">📷 Scanner</button>
-            <button class="btn-menu" onclick="showView('alcohol-view')">🍷 Alcool</button>
+            <button class="btn-menu" onclick="showView('calc-view')">🧮 Calculer Besoins</button> <!-- Inversé -->
         </div>
 
-        <!-- Gestion des données (JSON) -->
         <div class="data-controls">
             <button class="btn-small" onclick="exportData()">Sauvegarder (JSON)</button>
             <input type="file" id="file-import" style="display:none" onchange="importData(this)">
@@ -71,7 +66,7 @@
         </div>
     </section>
 
-    <!-- 2. CALCULATEUR DE BESOINS -->
+    <!-- 2. CALCULATEUR -->
     <section id="calc-view" class="view">
         <button class="btn-back" onclick="showView('home-view')">← Retour</button>
         <h2>Calcul des Besoins</h2>
@@ -126,7 +121,7 @@
 
         <h3>Objectif & Macros</h3>
         <div class="form-group">
-            <label>Aide au choix (Pré-remplir)</label>
+            <label>Aide au choix</label>
             <div style="display:flex; gap:5px;">
                 <select id="goal-type"><option value="cut">Sèche</option><option value="maint">Maintien</option><option value="bulk">Prise de masse</option></select>
                 <select id="goal-muscle"><option value="low">Muscle Faible</option><option value="med">Muscle Moyen</option><option value="high">Muscle Élevé</option></select>
@@ -151,61 +146,50 @@
         <button class="btn-submit" onclick="saveCalculation()">Valider et Sauvegarder</button>
     </section>
 
-    <!-- 3. TRACKER / MANGER (Recherche principale) -->
+    <!-- 3. TRACKER / MANGER -->
     <section id="tracker-view" class="view">
         <button class="btn-back" onclick="showView('home-view')">← Retour</button>
         <h2>Ajouter un aliment</h2>
         
         <input type="text" id="search-input" placeholder="Rechercher (Aliment, Recette)..." oninput="searchDatabase()">
-
         
         <div id="search-results" class="results-list"></div>
 
         <div id="selected-food-area" style="display:none; margin-top: 20px; border-top: 1px solid #333; padding-top:10px;">
             <h3 id="selected-food-name">Aliment</h3>
-            <!-- Le label change selon si c'est une recette ou un aliment -->
             <label id="lbl-qty">Quantité (g) :</label>
             <input type="number" id="food-qty" value="100">
             <button class="btn-submit" onclick="confirmEaten()">Confirmer</button>
         </div>
     </section>
 
-    <!-- 4. GESTION DES RECETTES (Vue Liste) -->
+    <!-- 4. RECETTES -->
     <section id="recipes-view" class="view">
         <button class="btn-back" onclick="showView('home-view')">← Retour</button>
         <h2>Mes Recettes</h2>
-        
         <button class="btn-submit" onclick="openRecipeCreator()">+ Créer une recette</button>
-        
-        <div id="saved-recipes-list" class="results-list" style="margin-top: 20px;">
-            <!-- La liste des recettes s'affichera ici -->
-        </div>
+        <div id="saved-recipes-list" class="results-list" style="margin-top: 20px;"></div>
     </section>
 
-    <!-- 5. CRÉATEUR DE RECETTE (Nouvelle Vue) -->
+    <!-- 5. CRÉATEUR RECETTE -->
     <section id="recipe-creator-view" class="view">
         <button class="btn-back" onclick="showView('recipes-view')">← Annuler</button>
         <h2>Nouvelle Recette</h2>
-        
         <div class="form-group">
             <label>Nom de la recette</label>
             <input type="text" id="recipe-name" placeholder="Ex: Salade César poulet">
         </div>
-
         <div class="card-highlight">
             <h3>Ajouter Ingrédients</h3>
             <input type="text" id="recipe-ingredient-search" placeholder="Chercher ingrédient..." oninput="searchIngredientForRecipe()">
             <div id="recipe-search-results" class="results-list" style="max-height: 150px;"></div>
         </div>
-
         <h3>Ingrédients inclus :</h3>
         <div id="recipe-draft-list" class="draft-list"></div>
-
         <div class="macro-summary">
             <p>Total Recette : <span id="recipe-total-cal">0</span> kcal</p>
             <small>P: <span id="recipe-total-p">0</span>g | G: <span id="recipe-total-c">0</span>g | L: <span id="recipe-total-f">0</span>g</small>
         </div>
-
         <button class="btn-submit" onclick="saveRecipe()">Sauvegarder la recette</button>
     </section>
 
@@ -221,11 +205,29 @@
         </div>
     </section>
 
-    <!-- 7. ALCOOL -->
+    <!-- 7. RÉSULTAT SCAN (NOUVELLE VUE) -->
+    <section id="scan-result-view" class="view">
+        <button class="btn-back" onclick="showView('scanner-view')">← Retour Scan</button>
+        <h2>Produit Trouvé !</h2>
+        
+        <div class="card-highlight" style="text-align:center; margin-top:20px;">
+            <h3 id="scan-match-name" style="color:var(--primary-color); margin-bottom:10px;">Produit</h3>
+            <div class="macro-summary">
+                <small>Pour 100g :</small><br>
+                <span id="scan-match-macros">P: 0g | G: 0g | L: 0g</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:20px;">
+            <button class="btn-submit" onclick="scanActionEat()">🍽️ J'ai mangé ça</button>
+            <button class="btn-action" style="margin-top:10px; background: #4CAF50;" onclick="scanActionSave()">💾 Ajouter aux aliments</button>
+        </div>
+    </section>
+
+    <!-- 8. ALCOOL -->
     <section id="alcohol-view" class="view">
         <button class="btn-back" onclick="showView('home-view')">← Retour</button>
         <h2>Consommation Alcool</h2>
-        <p>Base de données spécifique (Alcool + Macros)</p>
         <select id="alcohol-select"></select>
         <div class="form-group">
             <label>Quantité (cl)</label>
@@ -234,17 +236,14 @@
         <button class="btn-submit" onclick="addAlcohol()">Boire</button>
     </section>
 
-    <!-- 8. MES ALIMENTS (Liste Complète + Création) -->
+    <!-- 9. MES ALIMENTS -->
     <section id="foods-view" class="view">
         <button class="btn-back" onclick="showView('home-view')">← Retour</button>
-        
         <h2>Bibliothèque d'Aliments</h2>
-
-        <!-- Onglets ou Séparateurs visuels -->
         <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 20px;">
             <h3>Ajouter un nouveau</h3>
             <div class="form-group">
-                <input type="text" id="new-food-name" placeholder="Nom (ex: Mon Granola Maison)">
+                <input type="text" id="new-food-name" placeholder="Nom (ex: Mon Granola)">
             </div>
             <div class="form-group" style="display:flex; gap:5px;">
                 <input type="number" id="new-food-p" placeholder="Prot" style="width:33%">
@@ -253,15 +252,10 @@
             </div>
             <button class="btn-small" onclick="createCustomFood()">+ Enregistrer</button>
         </div>
-
         <h3>Liste des Aliments</h3>
         <input type="text" id="food-list-search" placeholder="Filtrer la liste..." oninput="renderAllFoods()">
-        
-        <div id="all-foods-container" class="results-list" style="max-height: 400px;">
-            <!-- La liste générée par JS ira ici -->
-        </div>
+        <div id="all-foods-container" class="results-list" style="max-height: 400px;"></div>
     </section>
-
 
     <script src="HuskyNutrition.js"></script>
 </body>
