@@ -37,8 +37,8 @@ const INGREDIENTS_DB = [
     {n: "Maquereau", g: 0.0, p: 20.0, l: 18.0}, {n: "Crevette", g: 0.0, p: 22.0, l: 0.8},
     {n: "Moules", g: 3.7, p: 20.0, l: 2.5}, {n: "Coquilles St-Jacques", g: 2.2, p: 16.0, l: 0.8},
     {n: "Colin d'Alaska", g: 0.0, p: 17.0, l: 0.8}, {n: "Hareng fumé", g: 0.0, p: 18.0, l: 13.0},
-    {n: "Anchois huile", g: 0.0, p: 25.0, l: 12.0}, {n: "oeuf entier", g: 0.7, p: 12.5, l: 10.0},
-    {n: "Blanc d'oeuf", g: 0.7, p: 10.5, l: 0.1}, {n: "Jaune d'oeuf", g: 0.3, p: 16.0, l: 31.0},
+    {n: "Anchois huile", g: 0.0, p: 25.0, l: 12.0}, {n: "Œuf entier", g: 0.7, p: 12.5, l: 10.0},
+    {n: "Blanc d'œuf", g: 0.7, p: 10.5, l: 0.1}, {n: "Jaune d'œuf", g: 0.3, p: 16.0, l: 31.0},
     {n: "Lait entier", g: 4.8, p: 3.2, l: 3.6}, {n: "Lait demi", g: 4.8, p: 3.2, l: 1.5},
     {n: "Lait écrémé", g: 5.0, p: 3.4, l: 0.1}, {n: "Yaourt entier", g: 4.6, p: 3.5, l: 3.3},
     {n: "Yaourt demi", g: 5.1, p: 3.8, l: 1.5}, {n: "Skyr", g: 4.0, p: 9.0, l: 0.2},
@@ -499,5 +499,3 @@ function importData(inp) {
     r.onload = e => { try { appState = JSON.parse(e.target.result); checkDateReset(); saveDataLocally(); updateUI(); alert("Chargé!"); } catch(x){alert("Erreur fichier");} };
     r.readAsText(f);
 }
-
-
