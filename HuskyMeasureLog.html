@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Husky Measure Log</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Optimisé mobile [web:46][web:47][web:49][web:9][web:51] -->
+    <link rel="stylesheet" href="HuskyMeasureLog.css">
+</head>
+<body>
+<header>
+    <button class="btn-back hidden" id="btnBack" aria-label="Retour">&#8592;</button>
+    <h1 id="appTitle">Husky Measure Log</h1>
+</header>
+
+<!-- MENU PRINCIPAL -->
+<section id="view-main-menu" class="view active">
+    <div style="padding:20px;">
+
+        <!-- Logo cliquable vers index.html -->
+        <div class="husky-logo-container">
+            <img src="HUSKY-Fitness.png" alt="HUSKY Fitness" class="husky-logo" id="huskyLogo">
+        </div>
+
+        <div class="menu-grid">
+            <button class="btn-menu" id="btnNewEntry">Nouvelle saisie de mensurations</button>
+            <button class="btn-menu" id="btnInitialSettings">Réglage initial</button>
+            <button class="btn-menu" id="btnManageEntries">Gérer les saisies</button>
+            <button class="btn-menu" id="btnStats">Statistiques</button>
+        </div>
+
+        <!-- Boutons export / import JSON côte à côte -->
+        <div class="husky-json-buttons">
+            <button type="button" class="btn-submit" id="btnExportJson">⬇️ Sauvegarder</button>
+            <label for="importJsonInput" class="btn-submit husky-btn-import">
+                ⬆️ Charger
+            </label>
+            <input type="file" id="importJsonInput" accept="application/json" class="hidden">
+        </div>
+    </div>
+</section>
+
+<!-- NOUVELLE SAISIE -->
+<section id="view-new-entry" class="view">
+    <div class="card-highlight">
+        <h2>Nouvelle saisie</h2>
+    </div>
+    <form id="newEntryForm">
+        <div class="form-group">
+            <label for="entryDate">Date</label>
+            <input type="date" id="entryDate" required>
+        </div>
+        <div class="form-group">
+            <label for="entryWeight">Poids (kg)</label>
+            <input type="number" id="entryWeight" step="0.1" inputmode="decimal">
+        </div>
+
+        <div id="measureFieldsContainer">
+            <!-- Champs mensurations générés dynamiquement -->
+        </div>
+
+        <button type="submit" class="btn-submit">Sauvegarder la saisie</button>
+    </form>
+</section>
+
+<!-- REGLAGE INITIAL -->
+<section id="view-initial-settings" class="view">
+    <div class="card-highlight">
+        <h2>Réglage initial</h2>
+        <p style="font-size:0.85rem;color:#bbb;">
+            Active les mensurations à saisir. Les membres dissociés désactivent leur version globale et inversement.
+        </p>
+    </div>
+
+    <div class="form-group">
+        <h3>Mensurations par défaut</h3>
+        <div id="defaultMeasuresList">
+            <!-- Cases à cocher générées dynamiquement -->
+        </div>
+    </div>
+
+    <div class="form-group">
+        <h3>Membres dissociés</h3>
+        <div id="splitMeasuresList">
+            <!-- Cases à cocher générées dynamiquement -->
+        </div>
+    </div>
+
+    <div class="form-group">
+        <h3>Champs personnalisés</h3>
+        <div id="customMeasuresList">
+            <!-- Champs personnalisés existants -->
+        </div>
+        <div class="set-row">
+            <span class="set-label">+</span>
+            <input type="text" id="newCustomMeasureName" placeholder="Nom du nouveau champ">
+            <button type="button" class="btn-action" id="btnAddCustomMeasure">Ajouter</button>
+        </div>
+    </div>
+
+    <button type="button" class="btn-submit" id="btnSaveSettings">Sauvegarder réglages initiaux</button>
+</section>
+
+<!-- GERER LES SAISIES -->
+<section id="view-manage-entries" class="view">
+    <div class="card-highlight">
+        <h2>Gérer les saisies</h2>
+        <p style="font-size:0.85rem;color:#bbb;">
+            Les saisies sont triées par date (plus récente en haut).
+        </p>
+    </div>
+
+    <div class="results-list" id="entriesList">
+        <!-- Liste des saisies -->
+    </div>
+</section>
+
+<!-- STATISTIQUES -->
+<section id="view-stats" class="view">
+    <div class="card-highlight">
+        <h2>Statistiques</h2>
+        <p style="font-size:0.85rem;color:#bbb;">
+            Choisis deux dates pour voir l'évolution des mensurations.
+        </p>
+    </div>
+
+    <div class="form-group">
+        <label for="statsFromDate">De la date</label>
+        <input type="date" id="statsFromDate">
+    </div>
+
+    <div class="form-group">
+        <label for="statsToDate">À la date</label>
+        <input type="date" id="statsToDate">
+    </div>
+
+    <button type="button" class="btn-submit" id="btnComputeStats">Calculer les tendances</button>
+
+    <div id="statsResults" style="margin-top:20px;">
+        <!-- Résultats statistiques -->
+    </div>
+</section>
+
+<script src="HuskyMeasureLog.js"></script>
+</body>
+</html>

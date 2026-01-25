@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUSKY Training Log</title>
+    <link rel="stylesheet" href="HuskyTrainingLog.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header id="app-header">
+        <button id="btn-back" class="btn-back hidden">←</button>
+        <h1 id="page-title" onclick="app.navTo('menu')">HUSKY TRAINING LOG</h1>
+    </header>
+
+    <main>
+        <!-- VUE 1 : Menu -->
+        <section id="view-menu" class="view active">
+		<div style="text-align: center; margin-bottom: 20px;">
+   		 <a href="index.html">
+    		    <img src="HUSKY-Fitness.png"
+    		         alt="Logo HUSKY Fitness"
+		             style="width: 50%; max-width: 300px; height: auto;">
+		    </a>
+		</div>
+
+            <button class="btn-menu btn-full" onclick="app.navTo('daily-summary')">📋 Résumé de la séance du jour</button>
+            <div class="menu-grid">
+                <button class="btn-menu" onclick="app.navTo('free-training')">Lancer un<br>entrainement libre</button>
+                <button class="btn-menu" onclick="app.navTo('saved-workouts')">Lancer un entrainement<br>pré-défini</button>
+                <button class="btn-menu" onclick="app.navTo('manage-workouts')">Gérer les<br>Entrainements</button>
+                <button class="btn-menu" onclick="app.navTo('manage-exercises')">Gérer les<br>Exercices</button>
+            </div>
+            <div style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                <h3 style="text-align:center; color:#777; font-size:0.9rem; margin-bottom:10px;">SAUVEGARDE DES DONNÉES</h3>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-action" onclick="app.exportData()">⬇️ Sauvegarder</button>
+                    <button class="btn-action" onclick="document.getElementById('file-upload').click()">⬆️ Charger</button>
+                    <input type="file" id="file-upload" style="display:none" accept=".json" onchange="app.importData(this)">
+                </div>
+            </div>
+        </section>
+
+        <!-- VUE 2 : Liste Exercices -->
+        <section id="view-exercise-list" class="view">
+            <div class="form-group">
+                <input type="text" id="search-exercise" placeholder="Rechercher (nom, muscle)..." onkeyup="app.filterExercises()">
+            </div>
+            <div id="exercise-list-container" class="results-list"></div>
+            <button id="btn-add-exercise-action" class="floating-action-btn hidden" onclick="app.openExerciseCreator()">+</button>
+        </section>
+
+        <!-- VUE 3 : Détail Exercice -->
+        <section id="view-exercise-detail" class="view">
+            <div class="card-highlight" id="exercise-info-panel">
+                <h2 id="detail-exercise-name" style="color: var(--primary-color); margin-bottom: 5px;">Nom</h2>
+                
+                <!-- Conteneur pour le GIF -->
+                <div id="exercise-gif-container" style="text-align:center; margin-bottom:10px; display:none;">
+                    <img id="exercise-gif-image" src="" alt="Démonstration" style="max-width:100%; border-radius:8px; border:1px solid #444;">
+                </div>
+
+                <p id="detail-exercise-muscles" style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 2px;">Muscles</p>
+                <p id="detail-exercise-material" style="color: #aaa; font-size: 0.85rem; font-style: italic;">Matériel</p>
+                
+                <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+                    <strong style="font-size: 0.9rem;">Dernière session :</strong>
+                    <div id="history-content" style="font-size: 0.85rem; color: #ccc; margin-top: 5px; line-height: 1.4;"></div>
+                </div>
+            </div>
+
+            <div id="sets-container"></div>
+            <button class="btn-submit" onclick="app.finishCurrentExercise()">Terminer l'exercice</button>
+        </section>
+
+        <!-- Autres Vues -->
+        <section id="view-saved-workouts" class="view"><div id="workouts-list-container" class="results-list"></div></section>
+        <section id="view-workout-runner" class="view"><h2 id="runner-workout-title" style="text-align:center;margin-bottom:15px"></h2><div id="runner-exercises-list" class="results-list"></div></section>
+        <section id="view-manage-workouts" class="view"><button class="btn-action" onclick="app.createNewWorkout()" style="margin-bottom:15px;">+ Créer un entrainement</button><div id="manage-workouts-list" class="results-list"></div></section>
+        
+        <section id="view-workout-editor" class="view">
+            <div class="form-group"><label>Nom</label><input type="text" id="editor-workout-name"></div>
+            <div class="form-group"><label>Exercices</label><input type="text" id="search-editor" placeholder="Filtrer..." onkeyup="app.filterEditorExercises()"></div>
+            <div id="editor-exercise-list" class="results-list" style="max-height: 40vh;"></div>
+            <button class="btn-submit" onclick="app.saveWorkoutStructure()">Sauvegarder</button>
+        </section>
+
+        <section id="view-exercise-creator" class="view">
+            <div class="form-group"><label>Nom</label><input type="text" id="new-ex-name"></div>
+            <div class="form-group"><label>Muscles</label><input type="text" id="new-ex-muscles"></div>
+            <div class="form-group"><label>Matériel</label><input type="text" id="new-ex-material"></div>
+            <button class="btn-submit" onclick="app.saveCustomExercise()">Enregistrer</button>
+        </section>
+
+        <section id="view-daily-summary" class="view">
+            <h2 style="text-align:center; margin-bottom: 20px; color: var(--primary-color);">Aujourd'hui</h2>
+            <div id="daily-summary-container" class="results-list"></div>
+        </section>
+    </main>
+
+    <script src="HuskyTrainingLog.js"></script>
+</body>
+</html>
