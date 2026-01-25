@@ -404,33 +404,56 @@ function onScanSuccess(decodedText) {
 
 function fetchOpenFoodFacts(code) {
     if(!code) return;
+    
     const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
     
+    console.log("Fetching:", url); // Aide au debug
+
     fetch(url)
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+    })
     .then(data => {
-        if(data.status === 1 || (data.product && data.product.product_name)) {
+        // On vérifie si on a un produit et un nom, peu importe le status code exact de l'API
+        if (data.product && (data.product.product_name || data.product.product_name_fr)) {
+            
             const p = data.product;
+            
+            // Sécurisation des valeurs (parfois undefined)
+            const name = p.product_name_fr || p.product_name || "Produit scanné";
+            const nutriments = p.nutriments || {};
+
             scannedFoodTemp = {
-                n: p.product_name || "Produit scanné",
-                p: p.nutriments.proteins_100g || 0,
-                c: p.nutriments.carbohydrates_100g || 0,
-                f: p.nutriments.fat_100g || 0
+                n: name,
+                p: nutriments.proteins_100g || nutriments.proteins || 0,
+                c: nutriments.carbohydrates_100g || nutriments.carbohydrates || 0,
+                f: nutriments.fat_100g || nutriments.fat || 0
             };
+            
+            // Mise à jour de l'UI
             document.getElementById('scan-match-name').innerText = scannedFoodTemp.n;
             document.getElementById('scan-match-macros').innerText = 
                 `P: ${scannedFoodTemp.p}g | G: ${scannedFoodTemp.c}g | L: ${scannedFoodTemp.f}g`;
+            
             showView('scan-result-view');
+            
         } else {
-            alert("Produit inconnu dans OpenFoodFacts");
+            // Vrai cas d'échec : pas de produit dans la réponse
+            alert("Produit introuvable (Code barre inconnu)");
             showView('scanner-view');
         }
     })
     .catch(err => {
-        console.error(err);
-        alert("Erreur connexion API");
+        console.error("Erreur Fetch:", err);
+        // On n'affiche l'alerte que si c'est une vraie erreur réseau, pas une erreur de parsing
+        alert("Erreur de communication avec OpenFoodFacts. Vérifiez votre connexion.");
+        showView('scanner-view');
     });
 }
+
 
 function scanActionEat() {
     if(!scannedFoodTemp) return;
@@ -499,3 +522,4 @@ function importData(inp) {
     r.onload = e => { try { appState = JSON.parse(e.target.result); checkDateReset(); saveDataLocally(); updateUI(); alert("Chargé!"); } catch(x){alert("Erreur fichier");} };
     r.readAsText(f);
 }
+
