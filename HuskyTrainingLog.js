@@ -396,110 +396,211 @@ const app = {
 
 window.addEventListener('load', function() { if(typeof app !== 'undefined') app.init(); });
 
-const RAW_EXERCISES_DATA = `Développé couché (barre);Grand pectoral, Triceps brachial;Deltoïde antérieur, Dentelé antérieur;Banc plat, Grande barre droite
-Développé couché (haltères);Grand pectoral, Triceps brachial;Deltoïde antérieur, Dentelé antérieur;Banc plat, Haltères
-Développé couché (Jammer Arm);Grand pectoral, Triceps brachial;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
-Écarté couché (haltères);Grand pectoral;Deltoïde antérieur, Petit pectoral;Banc plat, Haltères
-Pull-over;Grand dorsal, Grand pectoral;Triceps (longue portion), Dentelé;Banc plat, Haltère
-Développé incliné (barre);Grand pectoral (faisceau claviculaire), Triceps;Deltoïde antérieur;Banc inclinable, Grande barre droite
-Développé incliné (haltères);Grand pectoral (faisceau claviculaire), Triceps;Deltoïde antérieur;Banc inclinable, Haltères
-Développé incliné (Jammer Arm);Grand pectoral, Triceps brachial;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
-Développé décliné (barre);Grand pectoral (faisceau sternal), Triceps;Deltoïde antérieur;Banc déclinable, Grande barre droite
-Développé décliné (haltères);Grand pectoral (faisceau sternal), Triceps;Deltoïde antérieur;Banc déclinable, Haltères
-Développé décliné (Jammer Arm);Grand pectoral, Triceps brachial;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
-Pompes;Grand pectoral, Triceps;Deltoïde antérieur, Gainage;Tapis de sol
-Dips aux barres parallèles;Triceps, Grand pectoral;Deltoïde antérieur;Barres dips
-Développé militaire (barre);Deltoïdes, Triceps;Trapèzes;Banc inclinable/plat (assis), Grande barre droite
-Développé militaire (haltères);Deltoïdes, Triceps;Trapèzes;Banc inclinable/plat (assis), Haltères
+const RAW_EXERCISES_DATA = `Air squat; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Érecteurs du rachis ; Aucun 
+Donkey kick; Grand Fessier ; Ischio-jambiers (portion supérieure), Érecteurs du rachis ; Aucun (ou élastique) 
+Extension hanche poulie basse; Grand Fessier ; Ischio-jambiers, Érecteurs du rachis ; Machine à poulie basse, sangle 
+Extension mollets assis barre; Gastrocnémien (mollet) ; Soléaire ; Barre, banc, step 
+Extension mollets assis machine; Soléaire ; Gastrocnémien ; Machine à mollets assis 
+Extension mollets barre debout; Gastrocnémien ; Soléaire ; Barre, rack, step 
+Extension mollets sur marche; Gastrocnémien, Soléaire ; Jambier postérieur ; Step ou marche 
+Fente avant barre femme; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Érecteurs du rachis ; Barre, rack 
+Fentes avant; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Abdominaux (stabilisateurs) ; Aucun 
+Fentes avant kettlebell; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Épaules (stabilisation) ; Kettlebell(s) 
+Fentes croisees; Grand Fessier, Adducteurs ; Quadriceps, Ischio-jambiers ; Aucun ou poids 
+Fire hydratant; Moyen Fessier, Petit Fessier ; Tenseur du fascia lata, Érecteurs du rachis (stabilisation) ; Aucun (ou élastique) 
+Front squat avec halteres; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Érecteurs du rachis, Deltoïdes antérieurs ; Haltères 
+Good morning exercice; Ischio-jambiers, Grand Fessier ; Érecteurs du rachis, Adducteurs ; Barre (ou haltère) 
+Hack squat; Quadriceps ; Grand Fessier, Ischio-jambiers ; Machine Hack Squat 
+Hips thrust; Grand Fessier ; Ischio-jambiers, Adducteurs ; Banc, barre/haltère/élastique 
+Homme faisant un squat avec barre; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Érecteurs du rachis ; Barre, rack 
+Leg curl allonge; Ischio-jambiers ; Mollets ; Machine leg curl allongé 
+Leg curl assis machine; Ischio-jambiers ; Mollets ; Machine leg curl assis 
+Leg curl inverse machine tirage vertical; Ischio-jambiers ; Grand Fessier, Mollets ; Banc/Tapis, partenaire ou machine 
+Leg extension; Quadriceps (vastes) ; Aucun (isolé) ; Machine leg extension 
+Marche du fermier avec kettlebells; Avant-bras, Trapèzes, Quadriceps ; Grand Fessier, Ischio-jambiers, Abdominaux, Épaules ; Kettlebells ou haltères 
+Montees sur banc; Quadriceps, Grand Fessier ; Ischio-jambiers, Mollets, Fessiers ; Banc, poids optionnel 
+Presse a cuisses inclinee; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs ; Machine à presse inclinée 
+Presse a cuisses verticale; Quadriceps ; Grand Fessier, Ischio-jambiers ; Machine à presse verticale 
+Souleve de terre; Ischio-jambiers, Grand Fessier, Érecteurs du rachis ; Trapèzes, Avant-bras, Adducteurs, Quadriceps ; Barre et disques 
+Squat barre devant front; Quadriceps ; Grand Fessier, Ischio-jambiers, Érecteurs du rachis, Deltoïdes antérieurs ; Barre, rack 
+Squat bulgare halteres; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets ; Haltères, banc 
+Squat goblet; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Abdominaux, Deltoïdes antérieurs ; Haltère ou kettlebell 
+Squat pistol; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs, Mollets, Abdominaux (stabilisation) ; Aucun (ou contre-poids) 
+Squat statique contre murchaise; Quadriceps (endurance isométrique) ; Grand Fessier ; Mur, éventuellement ballon 
+Squat sur banc; Quadriceps, Grand Fessier ; Ischio-jambiers, Adducteurs ; Banc, poids optionnel 
+Zercher deadlift; Quadriceps, Grand Fessier, Érecteurs du rachis ; Ischio-jambiers, Trapèzes, Avant-bras, Biceps ; Barre 
+Zercher squat; Quadriceps, Grand Fessier, Abdominaux ; Ischio-jambiers, Érecteurs du rachis, Deltoïdes antérieurs ; Barre, rack 
+Bear plank avec kickback; Grand Droit, Obliques, Transverse ; Deltoïdes, Grand Fessier, Triceps ; Aucun 
+Ciseaux; Grand Droit (partie basse), Obliques ; Psoas-il iaque (stabilisation) ; Tapis 
+Crunch au sol; Grand Droit ; Obliques ; Tapis 
+Crunch papillon butterfly sit ups; Grand Droit (partie haute) ; Obliques ; Tapis 
+Crunch poulie haute; Grand Droit ; Obliques ; Machine à poulie haute, corde 
+Exercice abdos bicyclette; Obliques, Grand Droit ; Fléchisseurs des hanches ; Tapis 
+Flexions laterales haltere; Obliques (latéraux) ; Grand Droit, Carré des lombes ; Haltère 
+Gainage ours bear plank; Grand Droit, Transverse, Obliques ; Deltoïdes, Quadriceps ; Tapis 
+Mountain climber; Grand Droit, Obliques, Transverse ; Deltoïdes, Psoas, Quadriceps, Pectoraux ; Tapis 
+Planche abdos; Transverse, Grand Droit, Obliques ; Deltoïdes, Épaules, Quadriceps ; Tapis 
+Planche inversee abdos; Grand Droit, Fessiers, Ischio-jambiers ; Deltoïdes postérieurs, Triceps, Trapèzes ; Tapis 
+Planche laterale obliques; Obliques, Transverse ; Deltoïdes, Adducteurs ; Tapis 
+Releve de genoux suspendu; Grand Droit (partie basse), Obliques ; Fléchisseurs des hanches, Épaules ; Barre de traction 
+Releve de jambes assis; Grand Droit (partie basse) ; Fléchisseurs des hanches ; Banc ou chaise 
+Releve jambes chaise romaine abdominaux; Grand Droit (partie basse), Obliques ; Fléchisseurs des hanches ; Chaise romaine 
+Rotation buste debout poulie; Obliques, Grand Droit ; Épaules, Dos (stabilisation) ; Machine à poulie 
+Rotations russes obliques; Obliques, Grand Droit ; Transverse, Fléchisseurs des hanches ; Tapis, poids optionnel 
+Russian twist avec developpe epaule; Obliques, Deltoïdes ; Grand Droit, Trapèzes, Triceps ; Haltères ou medecine ball 
+Chin up traction supination; Grand Dorsal, Grand Rond ; Biceps (long et court), Brachial, Avant-bras ; Barre de traction 
+Curl allonge a la poulie; Biceps (long et court) ; Brachial ; Poulie basse, barre EZ 
+Curl au pupitre barre ez larry scott; Biceps (court) ; Brachial ; Banc Larry Scott, barre EZ/haltère 
+Curl barre; Biceps (long et court) ; Brachial, Avant-bras ; Barre droite ou EZ 
+Curl biceps alterne sur banc incline; Biceps (long) ; Brachial, Avant-bras ; Banc incliné, haltères 
+Curl biceps avec halteres alterne; Biceps (long et court) ; Brachial, Avant-bras ; Haltères 
+Curl biceps poulie basse; Biceps (long et court) ; Brachial ; Machine à poulie basse, barre 
+Curl concentre; Biceps (pic) ; Brachial, Avant-bras ; Banc, haltère 
+Curl haltere debout banc incline; Biceps (long) ; Brachial ; Banc incliné, haltères 
+Curl haltere incline; Biceps (long) ; Brachial ; Banc incliné, haltères 
+Curl haltere prise marteau pupitre; Brachial ; Biceps, Long supinateur ; Banc pupitre, haltère 
+Curl haltere prise neutre; Brachial ; Biceps (long et court), Long supinateur ; Haltères 
+Curl incline poulie; Biceps (long) ; Brachial ; Banc incliné, poulie basse 
+Curl inverse barre; Brachial, Long supinateur, Extenseurs ; Biceps (faible) ; Barre 
+Waiter curl; Biceps (long et court) ; Brachial, Deltoïdes antérieurs (stabilisation) ; Haltère 
+Bent over row avec halteres; Grand Dorsal, Trapèzes moyen/inférieur, Rhomboïdes ; Deltoïdes postérieurs, Biceps, Érecteurs du rachis ; Haltères, banc 
+Bird dog; Érecteurs du rachis, Grand Fessier ; Deltoïdes, Grand Dorsal (stabilisation) ; Tapis 
+Chin up traction supination; Grand Dorsal, Grand Rond ; Biceps, Trapèzes, Rhomboïdes ; Barre de traction 
+Dead hang suspension passive; Grand Dorsal, Avant-bras, Teres Major ; Trapèzes, Biceps (statique) ; Barre de traction 
+Overhead shrug; Trapèzes supérieurs ; Deltoïdes, Triceps ; Barre ou haltères 
+Planche inversee abdos; Grand Droit, Fessiers, Ischio-jambiers ; Deltoïdes postérieurs, Triceps, Trapèzes ; Tapis 
+Pull over barre (1); Grand Dorsal, Grand Rond, Grand Pectoral (sternal) ; Triceps (longue tête), Dentelé antérieur ; Barre, banc 
+Pull over barre; Grand Dorsal, Grand Rond ; Grand Pectoral, Triceps, Dentelé ; Machine à poulie haute 
+Pull over poulie; Grand Dorsal, Grand Pectoral (sternal) ; Triceps, Dentelé antérieur ; Haltères, banc 
+Pullover avec deux halteres; Grand Dorsal, Trapèzes moyen/inférieur, Rhomboïdes ; Deltoïdes postérieurs, Biceps, Érecteurs du rachis ; Barre 
+Pullover haltere; Grand Dorsal, Rhomboïdes ; Deltoïdes postérieurs, Biceps ; Élastique 
+Rowing barre; Grand Dorsal, Trapèzes, Rhomboïdes ; Deltoïdes postérieurs, Biceps, Érecteurs du rachis ; Haltère, banc 
+Rowing buste penche avec elastique; Trapèzes moyen/inférieur, Rhomboïdes ; Deltoïdes postérieurs, Grand Dorsal ; Banc incliné, haltères 
+Rowing haltere un bras; Grand Dorsal, Rhomboïdes ; Deltoïdes postérieurs, Biceps ; Élastique, point d'ancrage 
+Rowing halteres banc incline prise neutre; Trapèzes moyen/inférieur, Rhomboïdes, Deltoïdes postérieurs ; Grand Dorsal, Biceps ; Banc surélevé, haltères 
+Rowing horizontal bande elastique; Trapèzes supérieurs ; Levator scapulae, Épaules ; Barre 
+Seal row halteres; Trapèzes supérieurs ; Levator scapulae ; Machine à poulie 
+Shrug barre; Trapèzes supérieurs ; Levator scapulae ; Haltères 
+Shrug poulie haussement epaules; Ischio-jambiers, Grand Fessier, Érecteurs du rachis ; Trapèzes, Avant-bras, Grand Dorsal ; Machine guidée (ex: Smith) 
+Shrugs avec halteres; Érecteurs du rachis, Grand Fessier ; Deltoïdes postérieurs, Trapèzes ; Tapis 
+Souleve de terre avec machine; Grand Dorsal, Rhomboïdes, Trapèzes moyen ; Deltoïdes postérieurs, Biceps, Grand Rond ; Machine à poulie basse 
+Souleve de terre; Grand Dorsal (largeur) ; Rhomboïdes, Deltoïdes postérieurs, Biceps ; Machine à poulie basse 
+Superman; Grand Dorsal (partie inférieure), Rhomboïdes ; Deltoïdes postérieurs, Biceps ; Machine à poulie haute 
+Tirage horizontal poulie; Grand Dorsal, Grand Rond ; Trapèzes, Rhomboïdes, Biceps, Deltoïdes postérieurs ; Machine à lat-pulldown 
+Tirage horizontal prise large; Grand Dorsal, Biceps ; Trapèzes, Rhomboïdes, Grand Rond ; Machine à lat-pulldown 
+Tirage incline poulie haute; Grand Dorsal (épaisseur), Grand Rond ; Trapèzes, Rhomboïdes, Biceps, Deltoïdes postérieurs ; Machine à lat-pulldown 
+Tirage vertical poitrine; Grand Dorsal, Rhomboïdes, Biceps ; Trapèzes, Deltoïdes postérieurs ; Barre de traction, élastique 
+Tirage vertical prise inversee; Grand Dorsal, Rhomboïdes, Biceps ; Trapèzes, Deltoïdes postérieurs ; Machine à traction assistée ou banc 
+Tirage vertical prise serree; Grand Dorsal, Grand Rond, Trapèzes ; Rhomboïdes, Biceps, Deltoïdes postérieurs ; Barre de traction 
+Traction assiste elastique; Grand Dorsal, Grand Rond, Biceps ; Trapèzes, Rhomboïdes, Deltoïdes postérieurs ; Barre de traction parallèle 
+Traction assistee avec banc; Deltoïdes antérieur, médial, postérieur ; Trapèzes, Triceps ; Haltères, banc 
+Traction  dos; Deltoïdes antérieur et médial ; Trapèzes supérieurs, Triceps ; Haltères, banc 
+Traction prise neutre; Deltoïdes antérieur ; Trapèzes, Triceps ; Élastique 
+Developpe arnold; Deltoïdes antérieur et médial ; Trapèzes, Triceps ; Élastique, banc 
+Developpe epaule halteres; Deltoïdes antérieur et médial, Stabilisateurs du tronc ; Trapèzes, Triceps ; Haltères 
+Developpe epaule unilateral avec elastique; Deltoïdes antérieur et médial ; Trapèzes, Triceps ; Smith Machine, banc 
+Developpe epaules assis avec elastique; Deltoïdes antérieur, Triceps ; Trapèzes, Grand Pectoral (claviculaire) ; Barre, rack 
+Developpe epaules assis dumbbell z press; Deltoïdes postérieur ; Trapèzes, Rhomboïdes ; Élastique 
+Developpe epaules avec elastique; Deltoïdes antérieur ; Grand Pectoral (claviculaire) ; Banc, barre légère 
+Developpe epaules smith machine; Deltoïdes antérieur ; Grand Pectoral (claviculaire) ; Banc incliné, haltères 
+Developpe militaire; Deltoïdes antérieur ; Grand Pectoral (claviculaire), Trapèzes ; Haltères, barre ou élastique 
+Ecarte arriere elastique; Deltoïdes médial ; Deltoïdes antérieur, Trapèzes ; Haltères ou élastique 
+Elevation frontale allongee a la barre; Deltoïdes médial ; Deltoïdes antérieur, Trapèzes ; Machine à poulie basse 
+Elevation frontale banc incline; Deltoïdes postérieur, Trapèzes moyen/inférieur ; Rhomboïdes, Rotateurs externes ; Machine à poulie haute, corde 
+Elevations frontales; Deltoïdes postérieur ; Trapèzes, Rhomboïdes ; Banc, haltères 
+Elevations laterales; Deltoïdes postérieur ; Trapèzes, Rhomboïdes ; Élastique 
+Elevations laterales unilaterale poulie; Deltoïdes postérieur ; Trapèzes, Rhomboïdes ; Machine pec deck 
+Face pull; Deltoïdes antérieur et médial ; Trapèzes, Triceps ; Machine à presse épaules 
+Oiseau assis sur banc; Infra-épineux, Teres Minor (Rotateur externe) ; Deltoïdes postérieur ; Poulie basse, poignée 
+Oiseau avec elastique; Infra-épineux, Teres Minor ; Deltoïdes postérieur ; Haltère léger 
+Pec deck inverse; Quadriceps, Grand Fessier, Deltoïdes antérieur ; Ischio-jambiers, Triceps, Mollets ; Barre ou haltères 
+Presse epaule; Deltoïdes médial, Trapèzes supérieurs ; Deltoïdes antérieur, Biceps ; Élastique 
+Rotation externe epaule poulie; Deltoïdes médial, Trapèzes supérieurs ; Deltoïdes antérieur, Biceps ; Machine guidée (ex: Smith) 
+Rotation externe vertical epaule haltere; Grand Pectoral (sternal et claviculaire), Deltoïdes antérieur ; Triceps ; Banc plat, haltères 
+Thruster; Grand Pectoral (sternal) ; Triceps, Deltoïdes antérieur ; Banc, barre, serre-jambes optionnel 
+Tirage menton avec elastique; Grand Pectoral (sternal), Triceps ; Deltoïdes antérieur ; Barre, banc, partenaire 
+Tirage menton machine guidee; Triceps, Grand Pectoral (sternal interne) ; Deltoïdes antérieur ; Barre, banc 
+Developpe couche halteres; Grand Pectoral (sternal), Deltoïdes antérieur ; Triceps ; Barre, banc, rack 
+Developpe couche larsen; Grand Pectoral (claviculaire), Deltoïdes antérieur ; Triceps ; Élastique ancré 
+Developpe couche prise inversee; Grand Pectoral (partie inférieure) ; Triceps, Deltoïdes antérieur ; Banc décliné, élastique 
+Developpe couche serre avec halteres; Grand Pectoral (partie inférieure) ; Triceps, Deltoïdes antérieur ; Banc décliné, barre, rack 
+Developpe couche; Grand Pectoral (partie inférieure) ; Triceps, Deltoïdes antérieur ; Banc décliné, haltères 
+Developpe debout pectoraux elastique; Grand Pectoral (claviculaire) ; Deltoïdes antérieur, Triceps ; Banc incliné, barre, rack 
+Developpe decline avec elastique; Grand Pectoral (claviculaire) ; Deltoïdes antérieur, Triceps ; Banc incliné, haltères 
+Developpe decline barre; Grand Pectoral (claviculaire) ; Deltoïdes antérieur, Triceps ; Machine convergente (ex: Hammer Strength) 
+Developpe decline halteres; Grand Pectoral (sternal et inférieur), Triceps ; Deltoïdes antérieur ; Barres parallèles, poids optionnel 
+Developpe incline barre; Grand Pectoral (sternal) ; Deltoïdes antérieur, Dentelé antérieur ; Banc plat, haltères 
+Developpe incline halteres; Grand Pectoral (sternal) ; Deltoïdes antérieur, Dentelé ; Deux poulies basses, poignées 
+Developpe incline machine convergente; Grand Pectoral (sternal) ; Deltoïdes antérieur, Dentelé ; Poulie basse, poignée 
+Dips pectoraux; Grand Pectoral (sternal) ; Deltoïdes antérieur ; Élastique 
+Ecarte couche haltere; Grand Pectoral (partie inférieure) ; Deltoïdes antérieur, Dentelé ; Banc décliné, haltères 
+Ecarte poulie vis a vis pectoraux; Grand Pectoral (partie supérieure/claviculaire) ; Deltoïdes antérieur ; Banc, haltères 
+Ecarte unilateral a la poulie; Grand Pectoral, Triceps, Deltoïdes antérieur ; Dentelé antérieur, Abdominaux (stabilisation) ; Aucun 
+Ecartes bande elastique bilateral; Grand Pectoral (sternal), Grand Dorsal ; Dentelé antérieur, Triceps (longue tête) ; Banc, haltère 
+Ecartes decline avec halteres; Triceps (3 chefs) ; Avant-bras ; Barre EZ, banc 
+Hyght dumbell fly; Triceps, Grand Pectoral (interne) ; Deltoïdes antérieur ; Smith Machine, banc 
+Pompe ; Triceps ; Grand Pectoral (inférieur), Deltoïdes antérieur ; Deux bancs ou chaise 
+Pullover haltere; Triceps ; Deltoïdes antérieur, Grand Pectoral ; Barres parallèles 
+Barre front; Triceps ; Aucun (isolé) ; Poulie basse, corde/barre 
+Developpe couche prise serree smith machine; Triceps (longue tête) ; Aucun ; Banc incliné, haltères 
+Dips sur banc; Triceps (longue tête) ; Aucun ; Élastique 
+Dips triceps; Triceps (3 chefs) ; Aucun ; Haltère, banc optionnel 
+Extension horizontale poulie; Triceps (3 chefs) ; Aucun ; Banc incliné, poulie basse, corde 
+Extension triceps banc incline halteres; Triceps (latéral et médial) ; Aucun ; Poulie haute, corde 
+Extension triceps derriere tete avec elastique; Triceps (3 chefs) ; Aucun ; Poulie haute, barre courte 
+Extension triceps haltere un bras; Triceps (3 chefs) ; Aucun ; Élastique ancré en hauteur 
+Extension triceps incline poulie basse; Triceps (3 chefs) ; Aucun ; Banc, barre EZ 
+Extension triceps poulie haute corde; Triceps (3 chefs) ; Aucun ; Poulie basse, barre courte 
+Extension triceps poulie haute; Triceps (isolation) ; Aucun ; Poulie haute, poignée simple 
+Extension triceps verticale elastique; Triceps (3 chefs) ; Aucun ; Banc, haltère 
+Extension verticale assis barre; Triceps (longue tête) ; Avant-bras ; Banc plat, haltères ou barre EZ 
+Extension verticale triceps poulie basse; Triceps (3 chefs) ; Aucun ; Banc décliné, haltères 
+Extensions concentres des triceps poulie; Triceps, Grand Pectoral (interne) ; Deltoïdes antérieur, Abdominaux ; Aucun 
+Extensions des triceps assis avec haltere; Triceps ; Aucun ; Banc, haltères 
+Extensions triceps couche halteres; Triceps ; Aucun ; Banc, haltère 
+Extensions triceps decline halteres; Triceps, Grand Pectoral (interne) ; Deltoïdes antérieur, Abdominaux ; Aucun 
+Extensions triceps planche;Grand Pectoral, Triceps;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
+Kickback alterne assis;Grand Pectoral, Triceps;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
+Kickback;Grand Pectoral, Triceps;Deltoïde antérieur, Dentelé antérieur;Banc plat, Jammer Arm
+Pompe ;Grand Pectoral (faisceau sternal), Triceps;Deltoïde antérieur;Poulies basses (deux), Poignées
+Écarté à la poulie (crossover);Grand Pectoral;Deltoïde antérieur;Poulies hautes (deux), Poignées
+Développé prise marteau (haltères);Grand Pectoral, Triceps, Biceps (stabilisation);Deltoïde antérieur;Banc plat, Haltères
 Développé militaire (Jammer Arm);Deltoïdes, Triceps;Trapèzes;Banc inclinable/plat (assis), Jammer Arm
-Élévations latérales;Deltoïde latéral;Trapèzes, Supra-épineux;Haltères
-Élévations latérales (poulie);Deltoïde latéral;Trapèzes, Supra-épineux;Poulie reglable
-Élévations frontales;Deltoïde antérieur;Grand pectoral, Trapèzes;Haltères, Grande barre droite
-Élévations frontales (poulie);Deltoïde antérieur;Grand pectoral, Trapèzes;Poulie
-Face Pull;Deltoïde postérieur, Trapèze inférieur;Rhomboïdes, Rotateurs externes;Poulie réglable (haute), Corde
-Shrugs (barre);Trapèze supérieur;Trapèze moyen, Rhomboïdes;Grande barre droite, Haltères
-Shrugs (haltères);Trapèze supérieur;Trapèze moyen, Rhomboïdes;Haltères
-Rowing barre buste penché;Grand dorsal, Trapèze moyen, Rhomboïdes;Biceps, Deltoïde postérieur, Lombaires;Grande barre droite
-Rowing haltère unilatéral;Grand dorsal, Trapèze, Rhomboïdes;Biceps, Deltoïde postérieur;Banc plat, Haltère
-Rowing à la poulie basse;Grand dorsal, Trapèze, Rhomboïdes;Biceps, Deltoïde postérieur;Poulie basse, Grande barre
-Tirage vertical (Pull-down);Grand dorsal, Grand rond;Biceps, Deltoïde postérieur, Trapèze;Poulie haute, Grande barre
-Tirage vertical (Unilateral);Grand dorsal;Biceps;Poulie haute, Poignée
-Tractions supination (Pull-ups);Grand dorsal, Biceps brachial;Trapèze, Deltoïde postérieur, Rhomboïdes;Barre traction
-Tractions pronation (Chin-ups);Grand dorsal, Grand rond;Biceps, Deltoïde postérieur, Trapèze;Barre traction
-Tractions prise neutre;Grand dorsal, Biceps;Deltoïde postérieur, Trapèze;Barre traction (si poignées parallèles)
-Good Morning;Ischio-jambiers, Fessiers, Lombaires;Grand dorsal, Adducteurs;Grande barre droite
-Squat (barre libre);Quadriceps, Fessiers, Ischio-jambiers;Lombaires, Abdominaux, Mollets;Grande barre droite
-Squat avant;Quadriceps, Fessiers;Lombaires, Abdominaux, Ischio-jambiers;Grande barre droite
-Squat bulgare (fentes arrière);Quadriceps, Fessiers;Ischio-jambiers, Mollets, Gainage;Banc plat, Haltères
-Fentes marchées;Quadriceps, Fessiers;Ischio-jambiers, Mollets, Gainage;Haltères
-Hip Thrust;Grand fessier, Ischio-jambiers;Lombaires, Adducteurs;Banc plat, Grande barre droite/Haltère
-Pont fessier;Grand fessier, Ischio-jambiers;Lombaires, Adducteurs;Tapis de sol, Haltère optionnel
-Crunch abdos;Grand droit de l'abdomen;Obliques, Pyramidal;Tapis de sol
-Crunch oblique;Obliques;Grand droit de l'abdomen;Tapis de sol
-Relevé de jambes suspendu;Grand droit (bas), Ilio-psoas;Obliques, Quadriceps;Barre traction
-Planche abdominale;Grand droit, Transverse, Obliques;Épaules, Fessiers, Quadriceps;Tapis de sol
-Planche latérale;Obliques, Transverse;Deltoïde, Fessiers;Tapis de sol
-Mountain Climbers;Grand droit, Transverse, Ilio-psoas;Épaules, Pectoraux, Quadriceps;Tapis de sol
-Russian Twist;Obliques, Grand droit;Transverse, Ilio-psoas;Tapis de sol, Haltère optionnel
-Curl barre EZ;Biceps brachial;Brachial antérieur, Long supinateur;Barre EZ
-Curl haltères;Biceps brachial;Brachial antérieur, Long supinateur;Haltères
-Curl marteau;Brachial antérieur, Long supinateur;Biceps brachial;Haltères
-Curl poulie basse;Biceps brachial;Brachial antérieur, Long supinateur;Poulie basse + Barre
-Curl marteau poulie basse;Brachial antérieur, Long supinateur;Biceps brachial;Poulie basse + Corde
-Curl concentré;Biceps brachial;Brachial antérieur;Banc plat, Haltère
-Curl sur banc incliné;Biceps brachial;Brachial antérieur;Banc inclinable, Haltères
-Extensions triceps à la poulie;Triceps brachial;Aucun principal;Poulie haute, Corde/Petite barre
-Kick-back;Triceps brachial;Deltoïde postérieur;Banc plat, Haltère
-Barre au front (Skullcrusher);Triceps brachial (longue portion);Grand pectoral, Deltoïde antérieur;Banc plat, Barre EZ ou haltères
-Développé couché prise serrée;Triceps brachial;Grand pectoral, Deltoïde antérieur;Banc plat, Grande barre droite
+Élévations latérales (poulie);Deltoïde latéral;Trapèzes, Supra-épineux;Poulie réglable
+Élévations frontales (poulie);Deltoïde antérieur;Grand Pectoral, Trapèzes;Poulie
+Développé militaire à la poulie;Deltoïdes, Triceps;Trapèzes;Poulie basse (assis), Petite barre
+Élévations latérales à la poulie;Deltoïde latéral;Trapèzes, Supra-épineux;Poulie basse, Poignée
+Presse Jammer Arm (selon angle);Épaules/Triceps ou Pectoraux;Trapèzes, Dentelé;Jammer Arm
+Tirage vertical (Unilatéral);Grand Dorsal;Biceps;Poulie haute, Poignée
+Tractions pronation (Chin-ups);Grand Dorsal, Grand Rond;Biceps, Deltoïde postérieur, Trapèze;Barre de traction
+Rowing horizontal Jammer Arm;Grand Dorsal, Rhomboïdes;Biceps, Deltoïde postérieur;Jammer Arm
+Tirage vertical Jammer Arm;Grand Dorsal, Grand Rond;Biceps, Deltoïde postérieur;Jammer Arm
+Rowing Yates;Grand Dorsal, Biceps, Trapèze inférieur;Deltoïde postérieur;Grande barre droite
+Tirage vertical prise marteau;Grand Dorsal, Brachial antérieur;Biceps, Deltoïde postérieur;Poulie haute, Poignée neutre
+Rack Pull;Trapèzes, Ischio-jambiers, Fessiers, Lombaires;Grand Dorsal, Avant-bras;Grande barre droite (et supports)
+Pull-over à la poulie haute;Grand Dorsal, Grand Pectoral;Triceps, Dentelé;Poulie haute, Grande barre droite
+Pont fessier;Grand Fessier, Ischio-jambiers;Lombaires, Adducteurs;Tapis de sol, Haltère optionnel
+Sissy Squat;Quadriceps;Grand Droit de l'abdomen (gainage);Support pour équilibre
+Extension des jambes assis (simulée);Quadriceps;Aucun;Banc plat, Haltère entre les pieds
+Flexion des jambes allongé (Leg Curl) au sol;Ischio-jambiers;Mollets;Tapis de sol, partenaire ou tapis glissant
+Extension inverse (Back Extension) sur banc;Lombaires, Fessiers;Ischio-jambiers;Banc plat (ancrage aux chevilles)
+Flexions lombaires au banc;Lombaires;Fessiers, Ischio-jambiers;Banc plat (ancrage aux chevilles)
+Abduction de hanche à la poulie;Moyen Fessier, Petit Fessier;Tenseur du fascia lata;Poulie basse, Sangle de cheville
+Adduction de hanche à la poulie;Adducteurs;Pectiné, Gracile;Poulie basse, Sangle de cheville
+Lever de jambe latéral (abduction);Moyen Fessier, Petit Fessier;Obliques, Tenseur du fascia lata;Tapis de sol, Haltère optionnel
+Lever de jambe sur le côté (adduction);Adducteurs;Grand Droit de l'abdomen;Tapis de sol
+Squat partiel (Pin Squat) dans Jammer;Quadriceps, Fessiers, Ischio-jambiers;Lombaires, Gainage;Jammer Arm (avec butoirs)
+Crunch oblique;Obliques;Grand Droit de l'abdomen;Tapis de sol
+Sit-ups;Grand Droit de l'abdomen;Ilio-psoas, Obliques;Tapis de sol, Banc à abdos optionnel
+Enroulement vertébral (Roll-up);Grand Droit de l'abdomen;Ilio-psoas, Obliques;Tapis de sol
+Planche avec traction de genou (Spiderman);Obliques, Grand Droit, Ilio-psoas;Deltoïdes, Pectoraux;Tapis de sol
+Curl marteau poulie basse;Brachial antérieur, Long supinateur;Biceps brachial;Poulie basse, Corde
 Curl inversé;Long supinateur, Extenseurs de l'avant-bras;Biceps brachial;Grande barre droite, Barre EZ
+Curl en pronation à la poulie;Brachial antérieur, Long supinateur;Biceps;Poulie basse, Petite barre droite
+Extension des triceps à la poulie basse;Triceps brachial;Aucun principal;Poulie basse, Corde
 Flexions de poignets;Fléchisseurs des avant-bras;Aucun;Banc plat, Haltères
 Extensions de poignets;Extenseurs des avant-bras;Aucun;Banc plat, Haltères
-Tirage horizontal à la poulie;Grand dorsal, Rhomboïdes;Biceps, Deltoïde postérieur;Poulie basse, Poignée/Grande barre
-Extension des lombaires;Lombaires, Fessiers;Ischio-jambiers;Banc à lombaires (si disponible) ou Banc plat
-Superman;Lombaires, Fessiers;Trapèze, Deltoïde postérieur;Tapis de sol
-Donkey Kick;Grand fessier;Ischio-jambiers, Lombaires;Sangle de cheville, Poulie basse
-Fire Hydrant;Moyen fessier, Petit fessier;Lombaires, Abdominaux;Aucun (Tapis de sol)
-Sissy Squat;Quadriceps;Grand droit de l'abdomen (gainage);Support pour équilibre
-Step-up;Quadriceps, Fessiers;Ischio-jambiers, Gainage;Banc plat/stable, Haltères
 Burpees;Corps entier;Gainage;Tapis de sol
 Pompes en T;Pectoraux, Deltoïdes, Obliques;Triceps, Gainage;Tapis de sol
-Rowing à un bras à la poulie;Grand dorsal, Rhomboïdes;Biceps, Deltoïde postérieur;Poulie basse, Poignée
-Pull-over à la poulie haute;Grand dorsal, Grand pectoral;Triceps, Dentelé;Poulie haute, Grande barre droite
-Rack Pull;Trapèzes, Ischio-jambiers, Fessiers, Lombaires;Grand dorsal, Avant-bras;Grande barre droite (et supports)
-Renegade Row;Grand dorsal, Biceps, Gainage;Deltoïde postérieur, Triceps;Haltères lourds
-Goblet Squat;Quadriceps, Fessiers;Grand droit de l'abdomen, Ischio-jambiers;Haltère
-Lunges statiques;Quadriceps, Fessiers;Ischio-jambiers, Mollets;Haltères ou barre
-Crunch à la poulie haute;Grand droit de l'abdomen;Obliques;Poulie haute, Corde
-Rotation du buste à la poulie;Obliques, Grand droit;Transverse;Poulie haute, Corde
-Sit-ups;Grand droit de l'abdomen;Ilio-psoas, Obliques;Tapis de sol, Banc à abdos optionnel
-Élévations latérales à la poulie;Deltoïde latéral;Trapèze, Supra-épineux;Poulie basse, Poignée
-Extension triceps avec haltère;Triceps brachial;Aucun principal;Haltère, Banc plat
-Rowing Yates;Grand dorsal, Biceps, Trapèze inférieur;Deltoïde postérieur;Grande barre droite
-Gainage dorsal (Bird-Dog);Lombaires, Grand dorsal, Fessiers;Deltoïdes, Gainage;Tapis de sol
-Développé couché prise inversée;Triceps brachial, Grand pectoral;Deltoïde antérieur;Banc plat, Grande barre droite
-Écarté incliné (haltères);Grand pectoral (faisceau claviculaire);Deltoïde antérieur;Banc inclinable, Haltères
-Tirage vertical prise marteau;Grand dorsal, Brachial antérieur;Biceps, Deltoïde postérieur;Poulie haute, Poignée neutre
-Extension des triceps à la poulie basse;Triceps brachial;Aucun principal;Poulie basse, Corde
-Flexions lombaires au banc;Lombaires;Fessiers, Ischio-jambiers;Banc plat (ancrage aux chevilles)
-Élévations de mollets debout;Triceps sural (mollets);Soléaire;Step ou marche, Haltères
-Élévations de mollets assis;Soléaire;Gastrocnémien;Banc plat, Haltères sur les cuisses
-Développé militaire à la poulie;Deltoïdes, Triceps;Trapèzes;Poulie basse (assis), Petite barre
-Curl en pronation à la poulie;Brachial antérieur, Long supinateur;Biceps;Poulie basse, Petite barre droite
-Abduction de hanche à la poulie;Moyen fessier, Petit fessier;Tenseur du fascia lata;Poulie basse, Sangle de cheville
-Adduction de hanche à la poulie;Adducteurs;Pectiné, Gracile;Poulie basse, Sangle de cheville
-Développé couché à la poulie (bas);Grand pectoral (faisceau sternal), Triceps;Deltoïde antérieur;Poulies basses (deux), Poignées
-Écarté à la poulie (crossover);Grand pectoral;Deltoïde antérieur;Poulies hautes (deux), Poignées
-Presse Jammer Arm (similaire développé);Épaules, Triceps ou Pectoraux (selon angle);Trapèzes, Dentelé;Jammer arm
-Rowing horizontal Jammer Arm;Grand dorsal, Rhomboïdes;Biceps, Deltoïde postérieur;Jammer arm
-Tirage vertical Jammer Arm;Grand dorsal, Grand rond;Biceps, Deltoïde postérieur;Jammer arm
-Squat partiel (Pin Squat) dans Jammer;Quadriceps, Fessiers, Ischio-jambiers;Lombaires, Gainage;Jammer arm (avec butoirs)
-Flexion des jambes allongé (Leg Curl) au sol;Ischio-jambiers;Mollets;Tapis de sol, partenaire ou tapis glissant
-Extension de jambes assis (simulée);Quadriceps;Aucun;Banc plat, Haltère entre les pieds
-Lever de jambe latéral;Moyen fessier, Petit fessier;Obliques, Tenseur du fascia lata;Tapis de sol, Haltère optionnel à la cheville
-Lever de jambe sur le côté (adduction);Adducteurs;Grand droit de l'abdomen;Tapis de sol
-Planche avec traction de genou (Spiderman);Obliques, Grand droit, Ilio-psoas;Deltoïdes, Pectoraux;Tapis de sol
-Enroulement vertébral (Roll-up);Grand droit de l'abdomen;Ilio-psoas, Obliques;Tapis de sol
-Extension inverse (Back Extension) sur banc;Lombaires, Fessiers;Ischio-jambiers;Banc plat (ancrage aux chevilles)
-Développé prisemarteau (haltères);Grand pectoral, Triceps, Biceps (stabilisation);Deltoïde antérieur;Banc plat, Haltères
+Renegade Row;Grand Dorsal, Biceps, Gainage;Deltoïde postérieur, Triceps;Haltères lourds
 Rowing vertical (Upright Row);Trapèze supérieur, Deltoïdes;Biceps, Avant-bras;Grande barre droite, Haltères`;
