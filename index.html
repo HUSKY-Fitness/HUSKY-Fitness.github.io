@@ -17,10 +17,7 @@
     <!-- 1. PAGE D'ACCUEIL -->
     <section id="home-view" class="view active">
         <div class="dashboard">
-            <h2 onclick="showView('journal-view'); renderDailyLog();" style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted;">
-    Résumé Journalier 📝
-            </h2>
-
+            <h2>Résumé Journalier</h2>
             <div class="calories-circle">
                 <div class="circle-content">
                     <span id="display-remaining-cal">0</span>
@@ -31,6 +28,12 @@
                     <path id="circle-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
             </div>
+            
+            <!-- Nouveau bouton style Menu pour voir le détail -->
+            <button class="btn-action" style="width: auto; padding: 8px 20px; margin-bottom: 15px; background-color: #333; border: 1px solid #444;" onclick="showView('journal-view'); renderDailyLog();">
+                📜 Voir le détail / Modifier
+            </button>
+
             <p class="total-target">Objectif : <span id="display-target-cal">0</span> kcal</p>
 
             <div class="macros-container">
@@ -51,6 +54,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- Menu Principal (Ordre modifié) -->
         <div class="menu-grid">
