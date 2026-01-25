@@ -67,10 +67,25 @@
         </div>
 
         <div class="data-controls">
-            <button class="btn-small" onclick="exportData()">Sauvegarder (JSON)</button>
+            <button class="btn-menu" style="font-size: 0.9rem; padding: 12px;" onclick="exportData()">
+                ⬇️ Sauvegarder
+            </button>
             <input type="file" id="file-import" style="display:none" onchange="importData(this)">
-            <button class="btn-small" onclick="document.getElementById('file-import').click()">Charger (JSON)</button>
+            <button class="btn-menu" style="font-size: 0.9rem; padding: 12px;" onclick="document.getElementById('file-import').click()">
+                ⬆️ Charger
+            </button>
         </div>
+
+<!-- Logo cliquable vers index.html -->
+        <div style="text-align: center; margin-top: 20px;">
+            <img src="HUSKY-Fitness.png" 
+                 alt="HUSKY Fitness" 
+                 onclick="window.location.href='index.html'" 
+                 style="cursor: pointer; max-width: 300px; width: 50%; height: auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(33,150,243,0.3); transition: transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.05)'"
+                 onmouseout="this.style.transform='scale(1)'">
+        </div>
+
     </section>
 
     <!-- 2. CALCULATEUR -->
@@ -282,3 +297,4 @@
     <script src="HuskyNutrition.js"></script>
 </body>
 </html>
+
