@@ -118,7 +118,8 @@ const defaultState = {
     lastDate: new Date().toLocaleDateString('fr-CA'),
     customFoods: [],
     recipes: [],
-    history: [] 
+    history: [],
+    dailyLog: [] // Historique de la journée en cours
 };
 
 let appState = JSON.parse(JSON.stringify(defaultState));
@@ -154,7 +155,13 @@ function saveDataLocally() {
 function loadDataLocally() {
     const saved = localStorage.getItem('huskyData');
     if (saved) {
-        try { appState = { ...defaultState, ...JSON.parse(saved) }; }
+        try { 
+            const parsed = JSON.parse(saved);
+            // Fusionner avec le defaultState pour récupérer dailyLog s'il manque
+            appState = { ...defaultState, ...parsed };
+            // Sécurité : s'assurer que dailyLog est un tableau
+            if(!Array.isArray(appState.dailyLog)) appState.dailyLog = [];
+        }
         catch(e) { console.error("Données corrompues", e); }
     }
 }
@@ -166,10 +173,13 @@ function checkDateReset() {
             appState.history.push({
                 date: appState.lastDate,
                 consumed: { ...appState.consumed },
-                targets: { ...appState.targets }
+                targets: { ...appState.targets },
+                log: appState.dailyLog || [] // Sauvegarder le détail aussi
             });
         }
+        // Reset journalier
         appState.consumed = { kcal: 0, p: 0, c: 0, f: 0 };
+        appState.dailyLog = [];
         appState.lastDate = today;
         saveDataLocally();
     }
@@ -195,7 +205,93 @@ function updateMacroUI(type, val, target) {
 }
 
 /* =========================================
-   4. CALCULATEUR
+   4. JOURNAL & SUPPRESSION (NOUVEAU)
+   ========================================= */
+
+function renderDailyLog() {
+    const container = document.getElementById('daily-log-container');
+    container.innerHTML = "";
+    
+    if (appState.dailyLog.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#666;'>Rien mangé aujourd'hui !</p>";
+        document.getElementById('journal-total-display').innerText = "0 kcal";
+        return;
+    }
+
+    // Affichage inversé (le dernier ajouté en haut)
+    [...appState.dailyLog].reverse().forEach((item, index) => {
+        // L'index réel dans le tableau original est : length - 1 - index
+        const realIndex = appState.dailyLog.length - 1 - index;
+        
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>${item.n}</strong>
+                    <div style="font-size:0.8rem; color:#aaa;">
+                        ${Math.round(item.k)} kcal (P:${Math.round(item.p)} G:${Math.round(item.c)} L:${Math.round(item.f)})
+                    </div>
+                </div>
+                <button class="btn-small" style="background:var(--danger-color); color:white;" onclick="deleteDailyEntry(${realIndex})">🗑️</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    document.getElementById('journal-total-display').innerText = `${Math.round(appState.consumed.kcal)} kcal`;
+}
+
+function deleteDailyEntry(index) {
+    if(!confirm("Supprimer cette entrée ?")) return;
+
+    const item = appState.dailyLog[index];
+    
+    // Soustraire des totaux
+    appState.consumed.kcal -= item.k;
+    appState.consumed.p -= item.p;
+    appState.consumed.c -= item.c;
+    appState.consumed.f -= item.f;
+
+    // Eviter les nombres négatifs dus aux arrondis
+    if(appState.consumed.kcal < 0) appState.consumed.kcal = 0;
+    if(appState.consumed.p < 0) appState.consumed.p = 0;
+    if(appState.consumed.c < 0) appState.consumed.c = 0;
+    if(appState.consumed.f < 0) appState.consumed.f = 0;
+
+    // Retirer du log
+    appState.dailyLog.splice(index, 1);
+    
+    saveDataLocally();
+    updateUI();
+    renderDailyLog(); // Rafraîchir la liste
+}
+
+/* =========================================
+   5. AJOUT MACROS (MODIFIÉ POUR LOG)
+   ========================================= */
+
+// Nouvelle signature : on passe le NOM aussi
+function addEntryToLog(name, k, p, c, f) {
+    // 1. Ajouter aux totaux
+    appState.consumed.kcal += k;
+    appState.consumed.p += p;
+    appState.consumed.c += c;
+    appState.consumed.f += f;
+
+    // 2. Ajouter au journal
+    appState.dailyLog.push({
+        n: name,
+        k: k, p: p, c: c, f: f,
+        time: new Date().getTime()
+    });
+    
+    saveDataLocally();
+    updateUI();
+}
+
+/* =========================================
+   6. CALCULATEUR
    ========================================= */
 
 function applyGoalTemplate() {
@@ -242,7 +338,7 @@ function saveCalculation() {
 }
 
 /* =========================================
-   5. TRACKER / MANGER
+   7. TRACKER / MANGER
    ========================================= */
 
 function searchDatabase() {
@@ -291,19 +387,17 @@ function confirmEaten() {
         const bF = (currentSelectedFood.l!==undefined)?currentSelectedFood.l:(currentSelectedFood.f||0);
         p=bP*r; c=bC*r; f=bF*r; k=(p*4)+(c*4)+(f*9);
     }
-    addMacros(k,p,c,f);
+    
+    // Appel de la nouvelle fonction avec le NOM
+    addEntryToLog(currentSelectedFood.n, k, p, c, f);
+    
     document.getElementById('selected-food-area').style.display = 'none';
     document.getElementById('search-input').value = '';
     showView('home-view');
 }
 
-function addMacros(k, p, c, f) {
-    appState.consumed.kcal += k; appState.consumed.p += p; appState.consumed.c += c; appState.consumed.f += f;
-    saveDataLocally(); updateUI();
-}
-
 /* =========================================
-   6. RECETTES
+   8. RECETTES
    ========================================= */
 
 function openRecipeCreator() {
@@ -386,7 +480,7 @@ function renderRecipesList() {
 function deleteRecipe(idx, e) { e.stopPropagation(); if(confirm("Supprimer?")){ appState.recipes.splice(idx,1); saveDataLocally(); renderRecipesList(); } }
 
 /* =========================================
-   7. SCANNER
+   9. SCANNER
    ========================================= */
 
 let html5QrCode;
@@ -404,60 +498,39 @@ function onScanSuccess(decodedText) {
 
 function fetchOpenFoodFacts(code) {
     if(!code) return;
-    
     const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
     
     fetch(url)
     .then(res => res.json())
     .then(data => {
-        // 1. Vérification : A-t-on trouvé un produit ?
         if (!data || data.status === 0 || !data.product) {
             alert("Produit inconnu dans la base OpenFoodFacts.");
             showView('scanner-view');
-            return; // On arrête là
+            return;
         }
 
         const p = data.product;
-        // 2. Sécurisation : On s'assure que l'objet nutriments existe, sinon objet vide
         const nuts = p.nutriments || {};
-
-        // 3. Extraction des données avec valeurs par défaut (0 si absent)
-        // On force la conversion en nombre (parseFloat) pour éviter les bugs de calculs
         const valP = parseFloat(nuts.proteins_100g || nuts.proteins || 0);
         const valC = parseFloat(nuts.carbohydrates_100g || nuts.carbohydrates || 0);
         const valF = parseFloat(nuts.fat_100g || nuts.fat || 0);
-        
-        // Nom du produit (Français, sinon Anglais, sinon defaut)
         const name = p.product_name_fr || p.product_name || "Produit scanné";
 
-        // 4. Mise à jour de la variable globale
-        scannedFoodTemp = {
-            n: name,
-            p: valP,
-            c: valC,
-            f: valF
-        };
+        scannedFoodTemp = { n: name, p: valP, c: valC, f: valF };
 
-        // 5. Mise à jour de l'affichage (dans un bloc try pour éviter de déclencher le catch global)
         try {
             document.getElementById('scan-match-name').innerText = scannedFoodTemp.n;
             document.getElementById('scan-match-macros').innerText = 
                 `P: ${Math.round(scannedFoodTemp.p)}g | G: ${Math.round(scannedFoodTemp.c)}g | L: ${Math.round(scannedFoodTemp.f)}g`;
-            
             showView('scan-result-view');
-        } catch (displayError) {
-            console.error("Erreur d'affichage :", displayError);
-        }
+        } catch (displayError) { console.error("Erreur affichage", displayError); }
     })
     .catch(err => {
         console.error("Erreur Fetch complète :", err);
-        // On n'affiche l'alerte que si c'est une vraie erreur réseau
         alert("Problème de connexion ou API indisponible.");
         showView('scanner-view');
     });
 }
-
-
 
 function scanActionEat() {
     if(!scannedFoodTemp) return;
@@ -480,7 +553,7 @@ function scanActionSave() {
 }
 
 /* =========================================
-   8. ALIMENTS & ALCOOL
+   10. ALIMENTS & ALCOOL
    ========================================= */
 
 function renderAllFoods() {
@@ -512,7 +585,11 @@ function addAlcohol() {
     const item = ALCOHOL_DB[document.getElementById('alcohol-select').value];
     const q = parseFloat(document.getElementById('alcohol-qty').value)||0;
     const k = (item.alc*q*7) + (item.g*q*4) + (item.p*q*4) + (item.l*q*9);
-    addMacros(k, item.p*q, item.g*q, item.l*q); showView('home-view');
+    
+    // Ajout au log
+    addEntryToLog(item.n, k, item.p*q, item.g*q, item.l*q);
+    
+    showView('home-view');
 }
 
 function exportData() {
@@ -526,5 +603,3 @@ function importData(inp) {
     r.onload = e => { try { appState = JSON.parse(e.target.result); checkDateReset(); saveDataLocally(); updateUI(); alert("Chargé!"); } catch(x){alert("Erreur fichier");} };
     r.readAsText(f);
 }
-
-
