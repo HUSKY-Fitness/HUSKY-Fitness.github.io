@@ -17,7 +17,10 @@
     <!-- 1. PAGE D'ACCUEIL -->
     <section id="home-view" class="view active">
         <div class="dashboard">
-            <h2>Résumé Journalier</h2>
+            <h2 onclick="showView('journal-view'); renderDailyLog();" style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted;">
+    Résumé Journalier 📝
+            </h2>
+
             <div class="calories-circle">
                 <div class="circle-content">
                     <span id="display-remaining-cal">0</span>
@@ -257,6 +260,21 @@
         <div id="all-foods-container" class="results-list" style="max-height: 400px;"></div>
     </section>
 
+    <!-- 10. JOURNAL JOURNALIER (Historique du jour) -->
+    <section id="journal-view" class="view">
+        <button class="btn-back" onclick="showView('home-view')">← Retour</button>
+        <h2>Journal d'aujourd'hui</h2>
+        <p style="text-align:center; color:#888; margin-bottom:20px;">Cliquez sur 🗑️ pour supprimer une entrée.</p>
+        
+        <div id="daily-log-container" class="results-list"></div>
+        
+        <div class="macro-summary" style="margin-top:20px;">
+            <p>Total Actuel</p>
+            <small id="journal-total-display">0 kcal</small>
+        </div>
+    </section>
+
+    
     <script src="HuskyNutrition.js"></script>
 </body>
 </html>
