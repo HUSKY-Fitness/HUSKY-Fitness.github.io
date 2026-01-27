@@ -1,11 +1,23 @@
 /**
- * HUSKY Training Log - Logic Complete (with GIF & Reset)
+ * HUSKY Training Log - Logic Complete
+ * - Gestion GIF robuste (GitHub Pages)
+ * - Reset automatique des champs
+ * - Timers intégrés
+ * - Liste exercices complète
  */
 'use strict';
 
 const app = {
     data: { exercises: [], workouts: [], logs: [] },
-    state: { currentView: 'view-menu', activeExerciseId: null, activeWorkoutId: null, mode: 'free', editingWorkoutId: null, tempWorkoutStructure: [] },
+    state: { 
+        currentView: 'view-menu', 
+        activeExerciseId: null, 
+        activeWorkoutId: null, 
+        mode: 'free', 
+        editingWorkoutId: null, 
+        tempWorkoutStructure: [],
+        timerInterval: null // Gestion Timer
+    },
 
     init: function() {
         try {
@@ -30,7 +42,13 @@ const app = {
             if (line.trim() === "") return;
             const parts = line.split(';');
             if (parts.length >= 4) {
-                this.data.exercises.push({ id: idCounter++, name: parts[0].trim(), primary: parts[1].trim(), secondary: parts[2].trim(), material: parts[3].trim() });
+                this.data.exercises.push({ 
+                    id: idCounter++, 
+                    name: parts[0].trim(), 
+                    primary: parts[1].trim(), 
+                    secondary: parts[2].trim(), 
+                    material: parts[3].trim() 
+                });
             }
         });
     },
@@ -69,6 +87,13 @@ const app = {
     },
 
     navTo: function(viewId, contextData = null) {
+        // Arrêter le timer si changement de vue
+        if (this.state.timerInterval) {
+            clearInterval(this.state.timerInterval);
+            this.state.timerInterval = null;
+            this.resetTimerButtons();
+        }
+
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         let targetHtmlId = `view-${viewId}`;
         if (viewId === 'free-training' || viewId === 'manage-exercises') targetHtmlId = 'view-exercise-list';
@@ -184,35 +209,29 @@ const app = {
         document.getElementById('detail-exercise-muscles').innerText = "Muscles: " + exercise.primary;
         document.getElementById('detail-exercise-material').innerText = "Matériel: " + exercise.material;
 
-	// --- GESTION GIF ---
-	const gifContainer = document.getElementById('exercise-gif-container');
-	const gifImage = document.getElementById('exercise-gif-image');
+        // --- GESTION GIF (Robust) ---
+        const gifContainer = document.getElementById('exercise-gif-container');
+        const gifImage = document.getElementById('exercise-gif-image');
+        
+        const normalizeFilename = (name) => {
+            return name
+                .toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        };
 
-	// Normalisation du nom pour URL/GitHub
-	const normalizeFilename = (name) => {
-    	return name
-        	.toLowerCase()                    // Minuscules
-        	.replace(/[^\w\s-]/g, '')         // Supprime caractères spéciaux (parenthèses, accents, etc.)
-        	.replace(/\s+/g, '-')             // Espaces → tirets
-        	.replace(/-+/g, '-')              // Tirets multiples → simple tiret
-        	.replace(/^-+|-+$/g, '');         // Tirets début/fin
-	};
-
-	const gifPath = `gif/${normalizeFilename(exercise.name)}.gif`;
-	console.log(`Tentative chargement GIF: ${gifPath}`); // Debug
-
-	gifImage.src = gifPath;
-	gifImage.onload = () => { gifContainer.style.display = 'block'; };
-	gifImage.onerror = () => { gifContainer.style.display = 'none'; };
-
+        const gifPath = `gif/${normalizeFilename(exercise.name)}.gif`;
+        gifImage.src = gifPath;
+        gifImage.onload = function() { gifContainer.style.display = 'block'; };
+        gifImage.onerror = function() { gifContainer.style.display = 'none'; };
 
 
         // --- HISTORIQUE ---
         const historyLogs = this.data.logs.filter(l => l.exerciseId === exercise.id).sort((a,b) => b.date - a.date);
         const historyDiv = document.getElementById('history-content');
         
-        // Trouver le dernier log qui n'est pas "aujourd'hui" pour référence
-        // (Ou simplement afficher le dernier log disponible pour simplifier)
         if (historyLogs.length > 0) {
             const last = historyLogs[0]; 
             const date = new Date(last.date).toLocaleDateString('fr-FR');
@@ -233,17 +252,12 @@ const app = {
         setsContainer.innerHTML = "";
         
         const today = new Date().setHours(0,0,0,0);
-        // On cherche si on a DÉJÀ commencé cet exercice AUJOURD'HUI
         let currentSessionLog = this.data.logs.find(l => l.exerciseId === exercise.id && l.date >= today);
-        
-        // Si oui, on reprend les données. Si non, on part de zéro (RESET).
         let existingSets = currentSessionLog ? currentSessionLog.sets : [];
 
         for(let i=0; i<5; i++) {
             const setNum = i + 1;
-            // Si pas de donnée existante pour ce set aujourd'hui, valeur vide
             const savedData = existingSets[i] || { weight: '', reps: '', rpe: 'moyen' };
-            
             const row = document.createElement('div');
             row.className = 'set-row';
             row.innerHTML = `
@@ -260,6 +274,41 @@ const app = {
             `;
             setsContainer.appendChild(row);
         }
+    },
+
+    // --- TIMER LOGIC ---
+    startTimer: function(seconds, btnElement) {
+        if (this.state.timerInterval) {
+            clearInterval(this.state.timerInterval);
+            this.resetTimerButtons();
+        }
+
+        let remaining = seconds;
+        btnElement.classList.add('active-timer');
+        btnElement.innerText = remaining + " s";
+
+        this.state.timerInterval = setInterval(() => {
+            remaining--;
+            if (remaining > 0) {
+                btnElement.innerText = remaining + " s";
+            } else {
+                clearInterval(this.state.timerInterval);
+                this.state.timerInterval = null;
+                btnElement.classList.remove('active-timer');
+                btnElement.innerText = "Terminé !";
+                if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+                setTimeout(() => { this.resetTimerButtons(); }, 2000);
+            }
+        }, 1000);
+    },
+
+    resetTimerButtons: function() {
+        const btns = document.querySelectorAll('.btn-timer');
+        const labels = ["30s", "60s", "2m", "3m"];
+        btns.forEach((btn, index) => {
+            btn.classList.remove('active-timer');
+            if (labels[index]) btn.innerText = labels[index];
+        });
     },
 
     finishCurrentExercise: function() {
