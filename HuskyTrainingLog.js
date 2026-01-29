@@ -1,14 +1,14 @@
 /**
  * HUSKY Training Log - Logic Complete
- * - Gestion GIF robuste (GitHub Pages)
- * - Reset automatique des champs
- * - Timers intégrés
- * - Liste exercices complète
+ * - WAKE LOCK
+ * - GIF / WEBP Support
+ * - 5 DEFAULT WORKOUTS (Push, Pull, Upper, Legs 1, Legs 2)
+ * - CIRCUIT RESTART
  */
 'use strict';
 
 const app = {
-    data: { exercises: [], workouts: [], logs: [] },
+    data: { exercises: [], workouts: [], circuits: [], logs: [] },
     state: { 
         currentView: 'view-menu', 
         activeExerciseId: null, 
@@ -16,447 +16,398 @@ const app = {
         mode: 'free', 
         editingWorkoutId: null, 
         tempWorkoutStructure: [],
-        timerInterval: null // Gestion Timer
+        
+        timerInterval: null,
+        timerRemaining: 0,
+        activeTimerBtn: null,
+
+        activeCircuit: null,
+        circuitState: { isRunning: false, stepIndex: -1, mode: 'ready', timeRemaining: 0, intervalId: null },
+        tempCircuitStructure: [],
+        
+        wakeLock: null
     },
 
     init: function() {
         try {
-            const se = localStorage.getItem('husky_exercises');
-            if (se) this.data.exercises = JSON.parse(se);
-            else { this.parseRawData(); this.saveData('exercises'); }
-            const sw = localStorage.getItem('husky_workouts');
-            if (sw) this.data.workouts = JSON.parse(sw);
-            const sl = localStorage.getItem('husky_logs');
-            if (sl) this.data.logs = JSON.parse(sl);
-        } catch (e) { console.error(e); }
+            const se = localStorage.getItem('husky_exercises'); if (se) this.data.exercises = JSON.parse(se); else { this.parseRawData(); this.saveData('exercises'); }
+            const sw = localStorage.getItem('husky_workouts'); if (sw) this.data.workouts = JSON.parse(sw);
+            const sl = localStorage.getItem('husky_logs'); if (sl) this.data.logs = JSON.parse(sl);
+            const sc = localStorage.getItem('husky_circuits'); if (sc) this.data.circuits = JSON.parse(sc);
+            
+            // Création données par défaut si vide
+            if (this.data.circuits.length === 0 && this.data.exercises.length > 0) this.createDefaultCircuit();
+            if (this.data.workouts.length === 0 && this.data.exercises.length > 0) this.createDefaultWorkouts();
 
-        const btnBack = document.getElementById('btn-back');
-        if(btnBack) btnBack.addEventListener('click', () => this.handleBack());
+        } catch (e) { console.error(e); }
+        const btnBack = document.getElementById('btn-back'); if(btnBack) btnBack.addEventListener('click', () => this.handleBack());
     },
+
+    // --- WAKE LOCK API ---
+    enableWakeLock: async function() { if ('wakeLock' in navigator) { try { this.state.wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.log("Wake Lock error:", err); } } },
+    disableWakeLock: function() { if (this.state.wakeLock) { this.state.wakeLock.release().then(() => { this.state.wakeLock = null; }); } },
 
     parseRawData: function() {
         if (typeof RAW_EXERCISES_DATA === 'undefined') return;
-        const lines = RAW_EXERCISES_DATA.split('\n');
-        let idCounter = 1;
+        const lines = RAW_EXERCISES_DATA.split('\n'); let idCounter = 1;
         lines.forEach(line => {
-            if (line.trim() === "") return;
-            const parts = line.split(';');
-            if (parts.length >= 4) {
-                this.data.exercises.push({ 
-                    id: idCounter++, 
-                    name: parts[0].trim(), 
-                    primary: parts[1].trim(), 
-                    secondary: parts[2].trim(), 
-                    material: parts[3].trim() 
+            if (line.trim() === "") return; const parts = line.split(';');
+            if (parts.length >= 4) { this.data.exercises.push({ id: idCounter++, name: parts[0].trim(), primary: parts[1].trim(), secondary: parts[2].trim(), material: parts[3].trim() }); }
+        });
+    },
+
+    // --- DEFAULT DATA CREATION ---
+
+    getExIdByName: function(namePart) {
+        const ex = this.data.exercises.find(e => e.name.toLowerCase().includes(namePart.toLowerCase()));
+        return ex ? ex.id : null;
+    },
+
+    createDefaultWorkouts: function() {
+        const defs = [
+            {
+                name: "PUSH (Poussée)",
+                keys: ["Developpe militaire (jammer arm)", "Extension triceps poulie haute", "Elevations laterales unilaterale poulie", "Presse jammer arm (incliné)", "Extension triceps poulie"]
+            },
+            {
+                name: "PULL (Tirage)",
+                keys: ["Traction", "Curl haltere debout banc incline", "Tirage horizontal", "Curl marteau poulie basse", "Face pull"]
+            },
+            {
+                name: "UPPER (Haut du corps)",
+                keys: ["Developpe couche barre", "Curl haltere debout banc incline", "Extension triceps poulie haute", "Elevations laterales unilaterale poulie", "Tirage vertical poitrine", "Face pull"]
+            },
+            {
+                name: "LEGS 1",
+                keys: ["Squat bulgare halteres", "Montees sur banc", "Leg curl allonge", "Extension mollets assis barre", "Face pull", "Flexion du cou", "Extension du cou"]
+            },
+            {
+                name: "LEGS 2",
+                keys: ["Souleve de terre avec machine", "Montees sur banc", "Abduction de hanche a la poulie", "Leg curl allonge", "Shrug barre", "Rowing vertical (upright row)"]
+            }
+        ];
+
+        defs.forEach(def => {
+            const ids = [];
+            def.keys.forEach(k => {
+                const foundId = this.getExIdByName(k);
+                if (foundId) ids.push(foundId);
+            });
+            if (ids.length > 0) {
+                this.data.workouts.push({ id: Date.now() + Math.random(), name: def.name, exercises: ids });
+            }
+        });
+        this.saveData('workouts');
+    },
+
+
+    createDefaultCircuit: function() {
+        // Définition des circuits par défaut
+        const definitions = [
+            {
+                name: "Circuit Abdos 3 minutes",
+                // Temps Effort / Temps Repos
+                work: 30, rest: 15,
+                // Mots clés pour trouver les exercices
+                exercises: ["Crunch au sol", "Releve jambes chaise romaine abdominaux", "Bear plank avec kickback", "Mountain climber"]
+            },
+            {
+                name: "Circuit Cardio / Full Body 6 minutes",
+                work: 45, rest: 15,
+                exercises: ["Air Squat", "Bear plank avec kickback", "Mountain climber", "Squat statique", "Fentes avant", "Pompe"] 
+            },
+            {
+                name: "Circuit Avant bras 6 minutes",
+                work: 40, rest: 20,
+                exercises: ["Bobine andrieu", "Wrist curl pronation", "Wrist curl supination", "Curl inverse barre", "Hand Grip","Marche du fermier"]
+            }
+        ];
+
+        definitions.forEach(def => {
+            const circuitExs = [];
+            def.exercises.forEach(nameKey => { 
+                const id = this.getExIdByName(nameKey); 
+                // Vérifie que l'exo existe et n'est pas déjà dans ce circuit
+                if(id && !circuitExs.find(c => c.exerciseId === id)) {
+                    circuitExs.push({ exerciseId: id, workTime: def.work, restTime: def.rest }); 
+                }
+            });
+            
+            // On ajoute le circuit seulement si on a trouvé des exercices correspondants
+            if (circuitExs.length > 0) {
+                this.data.circuits.push({ 
+                    id: Date.now() + Math.floor(Math.random() * 1000), // Petit random pour éviter doublon d'ID si boucle rapide
+                    name: def.name, 
+                    exercises: circuitExs 
                 });
             }
         });
+
+        this.saveData('circuits');
     },
+
+
 
     saveData: function(key) {
         if (key === 'exercises') localStorage.setItem('husky_exercises', JSON.stringify(this.data.exercises));
         if (key === 'workouts') localStorage.setItem('husky_workouts', JSON.stringify(this.data.workouts));
         if (key === 'logs') localStorage.setItem('husky_logs', JSON.stringify(this.data.logs));
+        if (key === 'circuits') localStorage.setItem('husky_circuits', JSON.stringify(this.data.circuits));
     },
 
     exportData: function() {
-        const d = { date: new Date().toISOString(), exercises: this.data.exercises, workouts: this.data.workouts, logs: this.data.logs };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(d));
-        const a = document.createElement('a');
-        a.href = dataStr; a.download = "husky_training_backup.json";
-        document.body.appendChild(a); a.click(); a.remove();
+        const d = { date: new Date().toISOString(), exercises: this.data.exercises, workouts: this.data.workouts, logs: this.data.logs, circuits: this.data.circuits };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(d)); const a = document.createElement('a'); a.href = dataStr; a.download = "husky_training_backup.json"; document.body.appendChild(a); a.click(); a.remove();
     },
 
     importData: function(inputElement) {
-        const file = inputElement.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (imported.exercises && imported.logs && confirm("Remplacer les données actuelles ?")) {
-                    this.data.exercises = imported.exercises;
-                    this.data.workouts = imported.workouts || [];
-                    this.data.logs = imported.logs;
-                    this.saveData('exercises'); this.saveData('workouts'); this.saveData('logs');
-                    location.reload();
-                }
-            } catch (err) { alert("Erreur fichier"); }
-        };
-        reader.readAsText(file);
+        const file = inputElement.files[0]; if (!file) return; const reader = new FileReader();
+        reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (imported.exercises && confirm("Remplacer les données actuelles ?")) { this.data.exercises = imported.exercises; this.data.workouts = imported.workouts || []; this.data.logs = imported.logs || []; this.data.circuits = imported.circuits || []; this.saveData('exercises'); this.saveData('workouts'); this.saveData('logs'); this.saveData('circuits'); location.reload(); } } catch (err) { alert("Erreur fichier"); } }; reader.readAsText(file);
     },
 
     navTo: function(viewId, contextData = null) {
-        // Arrêter le timer si changement de vue
-        if (this.state.timerInterval) {
-            clearInterval(this.state.timerInterval);
-            this.state.timerInterval = null;
-            this.resetTimerButtons();
-        }
-
+        this.stopTimer(); this.stopCircuit(); // Nettoyage
+        
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         let targetHtmlId = `view-${viewId}`;
         if (viewId === 'free-training' || viewId === 'manage-exercises') targetHtmlId = 'view-exercise-list';
         
-        const target = document.getElementById(targetHtmlId);
-        if(target) target.classList.add('active');
+        const target = document.getElementById(targetHtmlId); if(target) target.classList.add('active');
         this.state.currentView = viewId;
 
-        const backBtn = document.getElementById('btn-back');
-        const title = document.getElementById('page-title');
-        const search = document.getElementById('search-exercise');
-
-        if (viewId === 'menu') {
-            if(backBtn) backBtn.classList.add('hidden');
-            if(title) title.innerText = "HUSKY TRAINING LOG";
-        } else {
-            if(backBtn) backBtn.classList.remove('hidden');
-        }
-
+        const btnBack = document.getElementById('btn-back'); const title = document.getElementById('page-title'); const search = document.getElementById('search-exercise');
+        if (viewId === 'menu') { if(btnBack) btnBack.classList.add('hidden'); if(title) title.innerText = "HUSKY TRAINING LOG"; } else { if(btnBack) btnBack.classList.remove('hidden'); }
         if ((viewId === 'free-training' || viewId === 'manage-exercises') && search) search.value = "";
 
         switch(viewId) {
-            case 'free-training':
-                this.state.mode = 'free';
-                if(title) title.innerText = "LIBRE";
-                document.getElementById('btn-add-exercise-action').classList.add('hidden');
-                this.renderExerciseList('exercise-list-container', true);
-                break;
-            case 'manage-exercises':
-                this.state.mode = 'manage_ex';
-                if(title) title.innerText = "EXERCICES";
-                document.getElementById('btn-add-exercise-action').classList.remove('hidden');
-                this.renderExerciseList('exercise-list-container', false);
-                break;
-            case 'exercise-detail':
-                this.state.activeExerciseId = contextData.id;
-                if(title) title.innerText = "EN COURS";
-                this.renderExerciseDetail(contextData);
-                break;
-            case 'daily-summary':
-                if(title) title.innerText = "BILAN JOUR";
-                this.renderDailySummary();
-                break;
-            case 'saved-workouts':
-                if(title) title.innerText = "PROGRAMMES";
-                this.renderSavedWorkoutsList();
-                break;
-            case 'workout-runner':
-                this.state.mode = 'runner';
-                this.state.activeWorkoutId = contextData.id;
-                if(title) title.innerText = contextData.name.toUpperCase();
-                this.renderWorkoutRunner(contextData);
-                break;
-            case 'manage-workouts':
-                this.state.mode = 'manage_workout';
-                if(title) title.innerText = "GESTION";
-                this.renderManageWorkoutsList();
-                break;
-            case 'workout-editor':
-                if(title) title.innerText = "EDITEUR";
-                this.renderWorkoutEditor(contextData); 
-                break;
-            case 'exercise-creator':
-                if(title) title.innerText = "NOUVEAU";
-                document.getElementById('new-ex-name').value = "";
-                document.getElementById('new-ex-muscles').value = "";
-                document.getElementById('new-ex-material').value = "";
-                break;
+            case 'free-training': this.state.mode = 'free'; if(title) title.innerText = "LIBRE"; document.getElementById('btn-add-exercise-action').classList.add('hidden'); this.renderExerciseList('exercise-list-container', true); break;
+            case 'manage-exercises': this.state.mode = 'manage_ex'; if(title) title.innerText = "EXERCICES"; document.getElementById('btn-add-exercise-action').classList.remove('hidden'); this.renderExerciseList('exercise-list-container', false); break;
+            case 'exercise-detail': this.state.activeExerciseId = contextData.id; if(title) title.innerText = "EN COURS"; this.renderExerciseDetail(contextData); break;
+            case 'daily-summary': if(title) title.innerText = "BILAN JOUR"; this.renderDailySummary(); break;
+            case 'saved-workouts': if(title) title.innerText = "PROGRAMMES"; this.renderSavedWorkoutsList(); break;
+            case 'workout-runner': this.state.mode = 'runner'; this.state.activeWorkoutId = contextData.id; if(title) title.innerText = contextData.name.toUpperCase(); this.renderWorkoutRunner(contextData); break;
+            case 'manage-workouts': this.state.mode = 'manage_workout'; if(title) title.innerText = "GESTION PRG"; this.renderManageWorkoutsList(); break;
+            case 'workout-editor': if(title) title.innerText = "EDITEUR PRG"; this.renderWorkoutEditor(contextData); break;
+            case 'exercise-creator': if(title) title.innerText = "NOUVEAU"; document.getElementById('new-ex-name').value = ""; break;
+            case 'saved-circuits': if(title) title.innerText = "CIRCUITS"; this.renderSavedCircuitsList(); break;
+            case 'manage-circuits': if(title) title.innerText = "GESTION CIRC"; this.renderManageCircuitsList(); break;
+            case 'circuit-editor': if(title) title.innerText = "EDITEUR CIRC"; this.renderCircuitEditor(contextData); break;
+            case 'circuit-runner': if(title) title.innerText = "EN COURS"; this.initCircuitRunner(contextData); break;
         }
     },
 
     handleBack: function() {
         const current = this.state.currentView;
         if (current === 'exercise-detail') {
-            if (this.state.mode === 'runner') {
-                const w = this.data.workouts.find(x => x.id === this.state.activeWorkoutId);
-                this.navTo('workout-runner', w);
-            } else this.navTo('free-training');
+            if (this.state.mode === 'runner') { const w = this.data.workouts.find(x => x.id === this.state.activeWorkoutId); this.navTo('workout-runner', w); } else this.navTo('free-training');
         } 
         else if (current === 'workout-runner') this.navTo('saved-workouts');
         else if (current === 'workout-editor') this.navTo('manage-workouts');
         else if (current === 'exercise-creator') this.navTo('manage-exercises');
+        else if (current === 'circuit-runner') this.navTo('saved-circuits');
+        else if (current === 'circuit-editor') this.navTo('manage-circuits');
         else this.navTo('menu');
     },
 
-    renderExerciseList: function(containerId, clickToTrain) {
-        const c = document.getElementById(containerId);
-        if(!c) return;
-        c.innerHTML = "";
-        [...this.data.exercises].sort((a,b) => a.name.localeCompare(b.name)).forEach(ex => {
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            div.dataset.search = (ex.name + " " + ex.primary).toLowerCase(); 
-            let html = `<strong>${ex.name}</strong><div style="font-size:0.8rem; color:#ccc;">${ex.primary}</div><div style="font-size:0.75rem; color:#888; font-style:italic;">${ex.material}</div>`;
-            if (!clickToTrain && this.state.mode === 'manage_ex') {
-                html += `<div style="margin-top:5px; text-align:right;"><button class="btn-remove" onclick="event.stopPropagation(); app.deleteExercise(${ex.id})">Supprimer</button></div>`;
-            }
-            div.innerHTML = html;
-            div.onclick = () => { if (clickToTrain) this.navTo('exercise-detail', ex); };
-            c.appendChild(div);
-        });
-    },
-
-    filterExercises: function() {
-        const q = document.getElementById('search-exercise').value.toLowerCase();
-        document.querySelectorAll('#exercise-list-container .result-item').forEach(item => {
-            item.classList.toggle('hidden', !(item.dataset.search || "").includes(q));
-        });
-    },
-
-    renderExerciseDetail: function(exercise) {
-        document.getElementById('detail-exercise-name').innerText = exercise.name;
-        document.getElementById('detail-exercise-muscles').innerText = "Muscles: " + exercise.primary;
-        document.getElementById('detail-exercise-material').innerText = "Matériel: " + exercise.material;
-
-        // --- GESTION GIF (Robust) ---
-        const gifContainer = document.getElementById('exercise-gif-container');
-        const gifImage = document.getElementById('exercise-gif-image');
+    // --- HELPER IMAGE LOADER (GIF puis WEBP) ---
+    loadImageSmart: function(imgElement, containerElement, exName) {
+        if (!exName) return;
+        const normalizeFilename = (name) => name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+        const baseName = normalizeFilename(exName);
         
-        const normalizeFilename = (name) => {
-            return name
-                .toLowerCase()
-                .replace(/[^\w\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-+|-+$/g, '');
+        // Essai 1: GIF
+        imgElement.src = `gif/${baseName}.gif`;
+        containerElement.style.display = 'block';
+
+        imgElement.onerror = function() {
+            // Essai 2: WEBP si le GIF plante
+            this.onerror = function() {
+                // Tout a échoué
+                containerElement.style.display = 'none';
+            };
+            this.src = `gif/${baseName}.webp`;
         };
+    },
 
-        const gifPath = `gif/${normalizeFilename(exercise.name)}.gif`;
-        gifImage.src = gifPath;
-        gifImage.onload = function() { gifContainer.style.display = 'block'; };
-        gifImage.onerror = function() { gifContainer.style.display = 'none'; };
-
-
-        // --- HISTORIQUE ---
-        const historyLogs = this.data.logs.filter(l => l.exerciseId === exercise.id).sort((a,b) => b.date - a.date);
-        const historyDiv = document.getElementById('history-content');
+    // ... (renderExerciseList, filterExercises Identiques) ...
+    renderExerciseList: function(containerId, clickToTrain) { const c = document.getElementById(containerId); if(!c) return; c.innerHTML = ""; [...this.data.exercises].sort((a,b) => a.name.localeCompare(b.name)).forEach(ex => { const div = document.createElement('div'); div.className = 'result-item'; div.dataset.search = (ex.name + " " + ex.primary).toLowerCase(); let html = `<strong>${ex.name}</strong><div style="font-size:0.8rem; color:#ccc;">${ex.primary}</div>`; if (!clickToTrain && this.state.mode === 'manage_ex') html += `<div style="margin-top:5px; text-align:right;"><button class="btn-remove" onclick="event.stopPropagation(); app.deleteExercise(${ex.id})">Supprimer</button></div>`; div.innerHTML = html; div.onclick = () => { if (clickToTrain) this.navTo('exercise-detail', ex); }; c.appendChild(div); }); },
+    filterExercises: function() { const q = document.getElementById('search-exercise').value.toLowerCase(); document.querySelectorAll('#exercise-list-container .result-item').forEach(item => item.classList.toggle('hidden', !(item.dataset.search || "").includes(q))); },
+    
+    renderExerciseDetail: function(exercise) { 
+        document.getElementById('detail-exercise-name').innerText = exercise.name; document.getElementById('detail-exercise-muscles').innerText = "Muscles: " + exercise.primary; document.getElementById('detail-exercise-material').innerText = "Matériel: " + exercise.material; 
         
-        if (historyLogs.length > 0) {
-            const last = historyLogs[0]; 
-            const date = new Date(last.date).toLocaleDateString('fr-FR');
-            let html = `<div style="margin-bottom:5px; color:var(--primary-color)">Le ${date} :</div>`;
-            last.sets.forEach((s, i) => {
-                if(s.weight || s.reps) {
-                    let rpeText = s.rpe ? `(${s.rpe})` : '';
-                    html += `<div style="margin-left:10px;">Set ${i+1}: <strong>${s.weight}kg</strong> x <strong>${s.reps}</strong> <span style="font-size:0.8rem; color:#aaa">${rpeText}</span></div>`;
-                }
-            });
-            historyDiv.innerHTML = html;
-        } else {
-            historyDiv.innerText = "Première session pour cet exercice !";
-        }
+        // Utilisation du nouveau loader
+        const gifContainer = document.getElementById('exercise-gif-container'); 
+        const gifImage = document.getElementById('exercise-gif-image'); 
+        this.loadImageSmart(gifImage, gifContainer, exercise.name);
 
-        // --- SAISIE (RESET LOGIQUE) ---
-        const setsContainer = document.getElementById('sets-container');
-        setsContainer.innerHTML = "";
-        
-        const today = new Date().setHours(0,0,0,0);
-        let currentSessionLog = this.data.logs.find(l => l.exerciseId === exercise.id && l.date >= today);
-        let existingSets = currentSessionLog ? currentSessionLog.sets : [];
+        const historyDiv = document.getElementById('history-content'); const historyLogs = this.data.logs.filter(l => l.exerciseId === exercise.id).sort((a,b) => b.date - a.date); if (historyLogs.length > 0) { const last = historyLogs[0]; const date = new Date(last.date).toLocaleDateString('fr-FR'); let html = `<div style="margin-bottom:5px; color:var(--primary-color)">Le ${date} :</div>`; last.sets.forEach((s, i) => { if(s.weight || s.reps) html += `<div style="margin-left:10px;">Set ${i+1}: <strong>${s.weight}kg</strong> x <strong>${s.reps}</strong></div>`; }); historyDiv.innerHTML = html; } else historyDiv.innerText = "Première session !"; const setsContainer = document.getElementById('sets-container'); setsContainer.innerHTML = ""; const today = new Date().setHours(0,0,0,0); let currentSessionLog = this.data.logs.find(l => l.exerciseId === exercise.id && l.date >= today); let existingSets = currentSessionLog ? currentSessionLog.sets : []; for(let i=0; i<5; i++) { const savedData = existingSets[i] || { weight: '', reps: '', rpe: 'moyen' }; const row = document.createElement('div'); row.className = 'set-row'; row.innerHTML = `<span class="set-label">#${i+1}</span><input type="number" placeholder="kg" id="set-weight-${i}" value="${savedData.weight}"><input type="number" placeholder="reps" id="set-reps-${i}" value="${savedData.reps}"><select id="set-rpe-${i}"><option value="moyen">Moyen</option><option value="echec">Echec</option></select>`; setsContainer.appendChild(row); } 
+    },
+    
+    // ... (Timers simple et Summary) ...
+    startTimer: function(seconds, btnElement) { this.state.timerRemaining += seconds; if (this.state.activeTimerBtn && this.state.activeTimerBtn !== btnElement) { this.state.activeTimerBtn.classList.remove('active-timer'); this.resetSingleButtonText(this.state.activeTimerBtn); } this.state.activeTimerBtn = btnElement; this.updateTimerDisplay(); btnElement.classList.add('active-timer'); if (!this.state.timerInterval) { this.state.timerInterval = setInterval(() => { this.state.timerRemaining--; if (this.state.timerRemaining > 0) this.updateTimerDisplay(); else { this.stopTimer(); btnElement.innerText = "Terminé !"; if ("vibrate" in navigator) navigator.vibrate([200]); setTimeout(() => { if (!this.state.timerInterval) this.resetTimerButtons(); }, 2000); } }, 1000); } },
+    updateTimerDisplay: function() { if (this.state.activeTimerBtn) { const m = Math.floor(this.state.timerRemaining / 60); const s = this.state.timerRemaining % 60; this.state.activeTimerBtn.innerText = m > 0 ? `${m}m ${s}s` : `${s}s`; } },
+    stopTimer: function() { if (this.state.timerInterval) clearInterval(this.state.timerInterval); this.state.timerInterval = null; this.state.timerRemaining = 0; this.state.activeTimerBtn = null; this.resetTimerButtons(); },
+    resetTimerButtons: function() { document.querySelectorAll('.btn-timer').forEach(btn => { btn.classList.remove('active-timer'); this.resetSingleButtonText(btn); }); },
+    resetSingleButtonText: function(btn) { const labels = ["30s", "60s", "2m", "3m"]; const index = Array.from(document.querySelectorAll('.btn-timer')).indexOf(btn); if (index >= 0) btn.innerText = labels[index]; },
+    finishCurrentExercise: function() { this.handleBack(); },
+    renderDailySummary: function() { const c = document.getElementById('daily-summary-container'); c.innerHTML = ""; const todayStart = new Date().setHours(0,0,0,0); const dailyLogs = this.data.logs.filter(l => l.date >= todayStart); if(dailyLogs.length===0) return c.innerHTML = "<div style='text-align:center;color:#888'>Aucun exercice</div>"; dailyLogs.forEach(log => { const ex = this.data.exercises.find(e => e.id === log.exerciseId); if(ex) { const div = document.createElement('div'); div.className = 'card-highlight'; div.innerHTML = `<h3>${ex.name}</h3>` + log.sets.filter(s=>s.weight||s.reps).map((s,i)=>`<div>Série ${i+1}: ${s.weight}kg x ${s.reps}</div>`).join(''); c.appendChild(div); } }); },
 
-        for(let i=0; i<5; i++) {
-            const setNum = i + 1;
-            const savedData = existingSets[i] || { weight: '', reps: '', rpe: 'moyen' };
-            const row = document.createElement('div');
-            row.className = 'set-row';
-            row.innerHTML = `
-                <span class="set-label">#${setNum}</span>
-                <input type="number" placeholder="kg" id="set-weight-${i}" value="${savedData.weight}">
-                <input type="number" placeholder="reps" id="set-reps-${i}" value="${savedData.reps}">
-                <select id="set-rpe-${i}">
-                    <option value="facile" ${savedData.rpe === 'facile' ? 'selected' : ''}>Facile</option>
-                    <option value="moyen" ${savedData.rpe === 'moyen' ? 'selected' : ''}>Moyen</option>
-                    <option value="proche_echec" ${savedData.rpe === 'proche_echec' ? 'selected' : ''}>Dur</option>
-                    <option value="echec" ${savedData.rpe === 'echec' ? 'selected' : ''}>Echec</option>
-                    <option value="degressif" ${savedData.rpe === 'degressif' ? 'selected' : ''}>Drop</option>
-                </select>
-            `;
-            setsContainer.appendChild(row);
-        }
+    // --- LOGIQUE CIRCUIT ---
+    renderSavedCircuitsList: function() { const c = document.getElementById('saved-circuits-list'); c.innerHTML = ""; if (this.data.circuits.length === 0) { c.innerHTML = "<div style='text-align:center; padding:20px'>Aucun circuit.</div>"; return; } this.data.circuits.forEach(circ => { const div = document.createElement('div'); div.className = 'result-item'; div.innerHTML = `<strong>${circ.name}</strong><span style="font-size:0.8rem; color:#aaa">${circ.exercises.length} exercices</span>`; div.onclick = () => this.navTo('circuit-runner', circ); c.appendChild(div); }); },
+    renderManageCircuitsList: function() { const c = document.getElementById('manage-circuits-list'); c.innerHTML = ""; this.data.circuits.forEach(circ => { const div = document.createElement('div'); div.className = 'result-item draft-item'; div.innerHTML = `<div><strong>${circ.name}</strong></div><div><button class="btn-small" onclick="event.stopPropagation(); app.editCircuit(${circ.id})">Edit</button><button class="btn-remove" onclick="event.stopPropagation(); app.deleteCircuit(${circ.id})">X</button></div>`; c.appendChild(div); }); },
+    createNewCircuit: function() { this.state.editingCircuitId = null; this.state.tempCircuitStructure = []; this.navTo('circuit-editor', null); },
+    editCircuit: function(id) { const c = this.data.circuits.find(x => x.id === id); this.state.editingCircuitId = id; this.state.tempCircuitStructure = JSON.parse(JSON.stringify(c.exercises)); this.navTo('circuit-editor', c); },
+    deleteCircuit: function(id) { if(confirm("Supprimer ?")) { this.data.circuits = this.data.circuits.filter(c => c.id !== id); this.saveData('circuits'); this.renderManageCircuitsList(); } },
+    renderCircuitEditor: function(circuit) { const n = document.getElementById('editor-circuit-name'); if(n) n.value = circuit ? circuit.name : ""; this.renderCircuitSelectedList(); const c = document.getElementById('circuit-search-list'); c.innerHTML = ""; [...this.data.exercises].sort((a,b) => a.name.localeCompare(b.name)).forEach(ex => { const div = document.createElement('div'); div.className = 'result-item'; div.dataset.search = ex.name.toLowerCase(); div.innerHTML = `<strong>${ex.name}</strong>`; div.onclick = () => { this.state.tempCircuitStructure.push({ exerciseId: ex.id, workTime: 30, restTime: 15 }); this.renderCircuitSelectedList(); }; c.appendChild(div); }); },
+    renderCircuitSelectedList: function() { const c = document.getElementById('circuit-selected-list'); c.innerHTML = ""; this.state.tempCircuitStructure.forEach((item, idx) => { const ex = this.data.exercises.find(e => e.id === item.exerciseId); const div = document.createElement('div'); div.className = 'result-item'; div.innerHTML = `<div style="display:flex; justify-content:space-between;"><strong>${idx+1}. ${ex.name}</strong><button class="btn-remove" style="padding:2px 8px; font-size:0.7rem;" onclick="app.removeCircuitItem(${idx})">X</button></div><div class="circuit-item-config"><label>Effort:</label><input type="number" class="circuit-input-small" value="${item.workTime}" onchange="app.updateCircuitItem(${idx}, 'workTime', this.value)">s<label style="margin-left:10px">Repos:</label><input type="number" class="circuit-input-small" value="${item.restTime}" onchange="app.updateCircuitItem(${idx}, 'restTime', this.value)">s</div>`; c.appendChild(div); }); },
+    updateCircuitItem: function(idx, field, val) { this.state.tempCircuitStructure[idx][field] = parseInt(val); },
+    removeCircuitItem: function(idx) { this.state.tempCircuitStructure.splice(idx, 1); this.renderCircuitSelectedList(); },
+    filterCircuitEditorExercises: function() { const q = document.getElementById('search-circuit-editor').value.toLowerCase(); document.querySelectorAll('#circuit-search-list .result-item').forEach(item => item.classList.toggle('hidden', !(item.dataset.search || "").includes(q))); },
+    saveCircuitStructure: function() { const n = document.getElementById('editor-circuit-name').value; if (!n) return alert("Nom requis"); if (this.state.tempCircuitStructure.length === 0) return alert("Circuit vide"); if (this.state.editingCircuitId) { const c = this.data.circuits.find(x => x.id === this.state.editingCircuitId); c.name = n; c.exercises = this.state.tempCircuitStructure; } else { this.data.circuits.push({ id: Date.now(), name: n, exercises: this.state.tempCircuitStructure }); } this.saveData('circuits'); this.navTo('manage-circuits'); },
+
+    // --- RUNNER CIRCUIT (Updated Restart) ---
+    initCircuitRunner: function(circuit) {
+        this.enableWakeLock();
+        this.state.activeCircuit = circuit;
+        this.state.circuitState = { isRunning: false, stepIndex: -1, mode: 'ready', timeRemaining: 5, intervalId: null };
+        document.getElementById('circuit-runner-title').innerText = circuit.name;
+        document.getElementById('btn-circuit-toggle').innerText = "▶ Start";
+        this.updateCircuitUI();
     },
 
-    // --- TIMER LOGIC ---
-    startTimer: function(seconds, btnElement) {
-        if (this.state.timerInterval) {
-            clearInterval(this.state.timerInterval);
-            this.resetTimerButtons();
-        }
-
-        let remaining = seconds;
-        btnElement.classList.add('active-timer');
-        btnElement.innerText = remaining + " s";
-
-        this.state.timerInterval = setInterval(() => {
-            remaining--;
-            if (remaining > 0) {
-                btnElement.innerText = remaining + " s";
-            } else {
-                clearInterval(this.state.timerInterval);
-                this.state.timerInterval = null;
-                btnElement.classList.remove('active-timer');
-                btnElement.innerText = "Terminé !";
-                if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-                setTimeout(() => { this.resetTimerButtons(); }, 2000);
-            }
-        }, 1000);
-    },
-
-    resetTimerButtons: function() {
-        const btns = document.querySelectorAll('.btn-timer');
-        const labels = ["30s", "60s", "2m", "3m"];
-        btns.forEach((btn, index) => {
-            btn.classList.remove('active-timer');
-            if (labels[index]) btn.innerText = labels[index];
-        });
-    },
-
-    finishCurrentExercise: function() {
-        const exId = this.state.activeExerciseId;
-        const setsData = [];
-        let hasData = false;
-
-        for(let i=0; i<5; i++) {
-            const w = document.getElementById(`set-weight-${i}`).value;
-            const r = document.getElementById(`set-reps-${i}`).value;
-            const rpe = document.getElementById(`set-rpe-${i}`).value;
-            if (w || r) hasData = true;
-            setsData.push({ weight: w, reps: r, rpe: rpe });
-        }
-
-        if (hasData) {
-            const todayStart = new Date().setHours(0,0,0,0);
-            const now = Date.now();
-            const existingIndex = this.data.logs.findIndex(l => l.exerciseId === exId && l.date >= todayStart);
-
-            if (existingIndex >= 0) {
-                this.data.logs[existingIndex].sets = setsData;
-                this.data.logs[existingIndex].date = now;
-            } else {
-                this.data.logs.push({ date: now, exerciseId: exId, sets: setsData });
-            }
-            this.saveData('logs');
-        }
-        this.handleBack();
-    },
-
-    renderDailySummary: function() {
-        const container = document.getElementById('daily-summary-container');
-        if(!container) return;
-        container.innerHTML = "";
-        const todayStart = new Date().setHours(0,0,0,0);
-        const dailyLogs = this.data.logs.filter(l => l.date >= todayStart);
-
-        if (dailyLogs.length === 0) {
-            container.innerHTML = "<div style='text-align:center; padding:20px; color:#888'>Aucun exercice aujourd'hui.</div>";
+    toggleCircuitState: function() {
+        // RESTART LOGIC
+        if (this.state.circuitState.mode === 'finished') {
+            this.initCircuitRunner(this.state.activeCircuit); // Re-init
+            // Auto start after re-init
+            this.state.circuitState.isRunning = true;
+            document.getElementById('btn-circuit-toggle').innerText = "⏸ Pause";
+            this.state.circuitState.intervalId = setInterval(() => this.tickCircuit(), 1000);
             return;
         }
-
-        dailyLogs.forEach(log => {
-            const ex = this.data.exercises.find(e => e.id === log.exerciseId);
-            if (!ex) return;
-            const div = document.createElement('div');
-            div.className = 'card-highlight';
-            let html = `<h3 style="color:var(--primary-color); margin-bottom:10px;">${ex.name}</h3>`;
-            log.sets.forEach((s, i) => {
-                if (s.weight || s.reps) {
-                     html += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>Série ${i+1}</span><span><strong>${s.weight}kg</strong> x <strong>${s.reps}</strong></span><span style="font-size:0.8rem; color:#aaa; font-style:italic">${s.rpe}</span></div>`;
-                }
-            });
-            html += `<div style="text-align:right; margin-top:10px;"><button class="btn-small" onclick="app.navTo('exercise-detail', {id: ${ex.id}, name: '${ex.name}', material: '${ex.material}', primary: '${ex.primary}'})">Modifier</button></div>`;
-            div.innerHTML = html;
-            container.appendChild(div);
-        });
+        
+        if (this.state.circuitState.isRunning) {
+            clearInterval(this.state.circuitState.intervalId);
+            this.state.circuitState.isRunning = false;
+            document.getElementById('btn-circuit-toggle').innerText = "▶ Reprendre";
+            document.getElementById('circuit-status-text').innerText = "PAUSE";
+        } else {
+            this.state.circuitState.isRunning = true;
+            document.getElementById('btn-circuit-toggle').innerText = "⏸ Pause";
+            this.state.circuitState.intervalId = setInterval(() => this.tickCircuit(), 1000);
+            if(this.state.circuitState.mode === 'ready') this.updateCircuitUI();
+        }
     },
 
-    renderSavedWorkoutsList: function() {
-        const c = document.getElementById('workouts-list-container');
-        if(!c) return; c.innerHTML = "";
-        if (this.data.workouts.length === 0) { c.innerHTML = "<div style='text-align:center; color:#777; padding:20px;'>Aucun programme.</div>"; return; }
-        this.data.workouts.forEach(w => {
-            const div = document.createElement('div'); div.className = 'result-item'; 
-            div.innerHTML = `<strong>${w.name}</strong><span style="font-size:0.85rem; color:#aaa">${w.exercises.length} exercices</span>`;
-            div.onclick = () => this.navTo('workout-runner', w);
-            c.appendChild(div);
-        });
+    tickCircuit: function() {
+        this.state.circuitState.timeRemaining--;
+        if (this.state.circuitState.timeRemaining < 0) this.nextCircuitStep();
+        else {
+            const m = Math.floor(this.state.circuitState.timeRemaining / 60);
+            const s = this.state.circuitState.timeRemaining % 60;
+            document.getElementById('circuit-timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        }
     },
 
-    renderWorkoutRunner: function(workout) {
-        const c = document.getElementById('runner-exercises-list');
-        if(!c) return; c.innerHTML = "";
-        const todayStart = new Date().setHours(0,0,0,0);
-        workout.exercises.forEach(exId => {
-            const exObj = this.data.exercises.find(e => e.id === exId);
-            if (!exObj) return;
-            const isDone = this.data.logs.some(l => l.exerciseId === exId && l.date >= todayStart);
-            const div = document.createElement('div');
-            div.className = `result-item ${isDone ? 'status-done' : 'status-todo'}`;
-            div.innerHTML = `<strong>${exObj.name}</strong><div style="font-size:0.8rem; color:#ccc;">${exObj.primary}</div>`;
-            div.onclick = () => this.navTo('exercise-detail', exObj);
-            c.appendChild(div);
-        });
+    nextCircuitStep: function() {
+        const cs = this.state.circuitState; const circuit = this.state.activeCircuit;
+        if (cs.mode === 'ready' || cs.mode === 'rest') {
+            cs.stepIndex++; if (cs.stepIndex >= circuit.exercises.length) { this.finishCircuit(); return; }
+            cs.mode = 'work'; cs.timeRemaining = circuit.exercises[cs.stepIndex].workTime;
+            if ("vibrate" in navigator) navigator.vibrate([300]);
+        } else if (cs.mode === 'work') {
+            if (cs.stepIndex >= circuit.exercises.length - 1) { this.finishCircuit(); return; }
+            cs.mode = 'rest'; cs.timeRemaining = circuit.exercises[cs.stepIndex].restTime;
+            if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
+        }
+        this.updateCircuitUI();
     },
 
-    renderManageWorkoutsList: function() {
-        const c = document.getElementById('manage-workouts-list');
-        if(!c) return; c.innerHTML = "";
-        this.data.workouts.forEach(w => {
-            const div = document.createElement('div'); div.className = 'result-item draft-item';
-            div.innerHTML = `<div><strong>${w.name}</strong></div><div><button class="btn-small" onclick="event.stopPropagation(); app.editWorkout(${w.id})">Edit</button><button class="btn-remove" onclick="event.stopPropagation(); app.deleteWorkout(${w.id})">X</button></div>`;
-            c.appendChild(div);
-        });
+    skipCircuitStep: function() { this.nextCircuitStep(); },
+    getCircuitExObj: function(idx) {
+        if (!this.state.activeCircuit || !this.state.activeCircuit.exercises[idx]) return null;
+        const id = this.state.activeCircuit.exercises[idx].exerciseId;
+        return this.data.exercises.find(e => e.id === id);
     },
 
+    updateCircuitUI: function() {
+        const cs = this.state.circuitState;
+        const box = document.getElementById('circuit-timer-box');
+        const timerDisplay = document.getElementById('circuit-timer-display');
+        const statusText = document.getElementById('circuit-status-text');
+        const currentExText = document.getElementById('circuit-current-ex');
+        const nextExText = document.getElementById('circuit-next-ex');
+        const gifImg = document.getElementById('circuit-gif-image');
+        const gifCont = document.getElementById('circuit-visual-container');
+        const materialInfo = document.getElementById('circuit-material-info');
+
+        const m = Math.floor(cs.timeRemaining / 60); const s = cs.timeRemaining % 60;
+        timerDisplay.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        box.className = 'circuit-timer-box';
+
+        let targetEx = null;
+
+        if (cs.mode === 'ready') {
+            box.classList.add('mode-ready'); statusText.innerText = "PRÊT ?";
+            targetEx = this.getCircuitExObj(0);
+            currentExText.innerText = targetEx ? targetEx.name : ""; nextExText.innerText = "";
+        } else if (cs.mode === 'work') {
+            box.classList.add('mode-work'); statusText.innerText = "EFFORT";
+            targetEx = this.getCircuitExObj(cs.stepIndex);
+            currentExText.innerText = targetEx ? targetEx.name : "";
+            const nextEx = this.getCircuitExObj(cs.stepIndex + 1);
+            nextExText.innerText = nextEx ? `Repos puis : ${nextEx.name}` : "Dernier exercice !";
+        } else if (cs.mode === 'rest') {
+            box.classList.add('mode-rest'); statusText.innerText = "REPOS";
+            targetEx = this.getCircuitExObj(cs.stepIndex + 1);
+            currentExText.innerText = targetEx ? `À suivre : ${targetEx.name}` : "Fini après ça"; nextExText.innerText = "";
+        } else if (cs.mode === 'finished') {
+            box.classList.add('mode-ready'); statusText.innerText = "TERMINÉ";
+            timerDisplay.innerText = "BRAVO"; currentExText.innerText = ""; nextExText.innerText = "";
+            document.getElementById('btn-circuit-toggle').innerText = "Recommencer"; // Feedback visuel
+            gifCont.style.display = 'none'; return;
+        }
+
+        if (targetEx) {
+            gifCont.style.display = 'block';
+            materialInfo.innerText = targetEx.material || "Aucun";
+            // Utilisation loader pour UI Circuit
+            this.loadImageSmart(gifImg, gifCont, targetEx.name);
+        } else {
+            gifCont.style.display = 'none';
+        }
+    },
+
+    finishCircuit: function() {
+        clearInterval(this.state.circuitState.intervalId);
+        this.state.circuitState.mode = 'finished';
+        this.updateCircuitUI();
+        if ("vibrate" in navigator) navigator.vibrate([200, 100, 200, 100, 500]);
+        this.disableWakeLock();
+    },
+
+    stopCircuit: function() { if (this.state.circuitState.intervalId) clearInterval(this.state.circuitState.intervalId); this.disableWakeLock(); },
+
+    // ... (Reste inchangé) ...
     createNewWorkout: function() { this.state.editingWorkoutId = null; this.state.tempWorkoutStructure = []; this.navTo('workout-editor', null); },
     editWorkout: function(id) { const w = this.data.workouts.find(x => x.id === id); this.state.editingWorkoutId = id; this.state.tempWorkoutStructure = [...w.exercises]; this.navTo('workout-editor', w); },
     deleteWorkout: function(id) { if(confirm("Supprimer ?")) { this.data.workouts = this.data.workouts.filter(w => w.id !== id); this.saveData('workouts'); this.renderManageWorkoutsList(); } },
-    
-    renderWorkoutEditor: function(workout) {
-        const n = document.getElementById('editor-workout-name'); if(n) n.value = workout ? workout.name : "";
-        const c = document.getElementById('editor-exercise-list'); if(!c) return; c.innerHTML = "";
-        [...this.data.exercises].sort((a,b) => a.name.localeCompare(b.name)).forEach(ex => {
-            const div = document.createElement('div'); div.className = 'result-item';
-            div.dataset.search = (ex.name + " " + ex.primary).toLowerCase();
-            if (this.state.tempWorkoutStructure.includes(ex.id)) div.classList.add('selected-item');
-            div.innerHTML = `<strong>${ex.name}</strong><div style="font-size:0.8rem;color:#777">${ex.primary}</div>`;
-            div.onclick = () => {
-                if (this.state.tempWorkoutStructure.includes(ex.id)) {
-                    this.state.tempWorkoutStructure = this.state.tempWorkoutStructure.filter(id => id !== ex.id); div.classList.remove('selected-item');
-                } else { this.state.tempWorkoutStructure.push(ex.id); div.classList.add('selected-item'); }
-            };
-            c.appendChild(div);
-        });
-    },
-
-    filterEditorExercises: function() {
-        const q = document.getElementById('search-editor').value.toLowerCase();
-        document.querySelectorAll('#editor-exercise-list .result-item').forEach(item => item.classList.toggle('hidden', !(item.dataset.search || "").includes(q)));
-    },
-
-    saveWorkoutStructure: function() {
-        const n = document.getElementById('editor-workout-name').value;
-        if (!n) return alert("Nom requis");
-        if (this.state.tempWorkoutStructure.length === 0) return alert("Sélection vide");
-        if (this.state.editingWorkoutId) { const w = this.data.workouts.find(x => x.id === this.state.editingWorkoutId); w.name = n; w.exercises = this.state.tempWorkoutStructure; } 
-        else { this.data.workouts.push({ id: Date.now(), name: n, exercises: this.state.tempWorkoutStructure }); }
-        this.saveData('workouts'); this.navTo('manage-workouts');
-    },
-
+    renderWorkoutEditor: function(workout) { const n = document.getElementById('editor-workout-name'); if(n) n.value = workout ? workout.name : ""; const c = document.getElementById('editor-exercise-list'); if(!c) return; c.innerHTML = ""; [...this.data.exercises].sort((a,b) => a.name.localeCompare(b.name)).forEach(ex => { const div = document.createElement('div'); div.className = 'result-item'; div.dataset.search = (ex.name + " " + ex.primary).toLowerCase(); if (this.state.tempWorkoutStructure.includes(ex.id)) div.classList.add('selected-item'); div.innerHTML = `<strong>${ex.name}</strong><div style="font-size:0.8rem;color:#777">${ex.primary}</div>`; div.onclick = () => { if (this.state.tempWorkoutStructure.includes(ex.id)) { this.state.tempWorkoutStructure = this.state.tempWorkoutStructure.filter(id => id !== ex.id); div.classList.remove('selected-item'); } else { this.state.tempWorkoutStructure.push(ex.id); div.classList.add('selected-item'); } }; c.appendChild(div); }); },
+    filterEditorExercises: function() { const q = document.getElementById('search-editor').value.toLowerCase(); document.querySelectorAll('#editor-exercise-list .result-item').forEach(item => item.classList.toggle('hidden', !(item.dataset.search || "").includes(q))); },
+    saveWorkoutStructure: function() { const n = document.getElementById('editor-workout-name').value; if (!n) return alert("Nom requis"); if (this.state.tempWorkoutStructure.length === 0) return alert("Vide"); if (this.state.editingWorkoutId) { const w = this.data.workouts.find(x => x.id === this.state.editingWorkoutId); w.name = n; w.exercises = this.state.tempWorkoutStructure; } else { this.data.workouts.push({ id: Date.now(), name: n, exercises: this.state.tempWorkoutStructure }); } this.saveData('workouts'); this.navTo('manage-workouts'); },
     openExerciseCreator: function() { this.navTo('exercise-creator'); },
-    saveCustomExercise: function() {
-        const n = document.getElementById('new-ex-name').value;
-        const m = document.getElementById('new-ex-muscles').value;
-        const mat = document.getElementById('new-ex-material').value;
-        if(!n) return alert("Nom requis");
-        this.data.exercises.push({ id: Date.now(), name: n, primary: m, secondary: "", material: mat });
-        this.saveData('exercises'); this.navTo('manage-exercises');
-    },
-    deleteExercise: function(id) { if(confirm("Supprimer ?")) { this.data.exercises = this.data.exercises.filter(e => e.id !== id); this.saveData('exercises'); this.renderExerciseList('exercise-list-container', false); } }
+    saveCustomExercise: function() { const n = document.getElementById('new-ex-name').value; if(!n) return alert("Nom requis"); this.data.exercises.push({ id: Date.now(), name: n, primary: document.getElementById('new-ex-muscles').value, secondary: "", material: document.getElementById('new-ex-material').value }); this.saveData('exercises'); this.navTo('manage-exercises'); },
+    deleteExercise: function(id) { if(confirm("Supprimer ?")) { this.data.exercises = this.data.exercises.filter(e => e.id !== id); this.saveData('exercises'); this.renderExerciseList('exercise-list-container', false); } },
+    renderSavedWorkoutsList: function() { const c = document.getElementById('workouts-list-container'); if(!c) return; c.innerHTML = ""; if (this.data.workouts.length === 0) { c.innerHTML = "<div style='text-align:center; color:#777;'>Aucun programme.</div>"; return; } this.data.workouts.forEach(w => { const div = document.createElement('div'); div.className = 'result-item'; div.innerHTML = `<strong>${w.name}</strong><span style="font-size:0.85rem; color:#aaa">${w.exercises.length} exercices</span>`; div.onclick = () => this.navTo('workout-runner', w); c.appendChild(div); }); },
+    renderWorkoutRunner: function(workout) { const c = document.getElementById('runner-exercises-list'); if(!c) return; c.innerHTML = ""; const todayStart = new Date().setHours(0,0,0,0); workout.exercises.forEach(exId => { const exObj = this.data.exercises.find(e => e.id === exId); if (!exObj) return; const isDone = this.data.logs.some(l => l.exerciseId === exId && l.date >= todayStart); const div = document.createElement('div'); div.className = `result-item ${isDone ? 'status-done' : 'status-todo'}`; div.innerHTML = `<strong>${exObj.name}</strong>`; div.onclick = () => this.navTo('exercise-detail', exObj); c.appendChild(div); }); },
+    renderManageWorkoutsList: function() { const c = document.getElementById('manage-workouts-list'); if(!c) return; c.innerHTML = ""; this.data.workouts.forEach(w => { const div = document.createElement('div'); div.className = 'result-item draft-item'; div.innerHTML = `<div><strong>${w.name}</strong></div><div><button class="btn-small" onclick="event.stopPropagation(); app.editWorkout(${w.id})">Edit</button><button class="btn-remove" onclick="event.stopPropagation(); app.deleteWorkout(${w.id})">X</button></div>`; c.appendChild(div); }); }
 };
 
 window.addEventListener('load', function() { if(typeof app !== 'undefined') app.init(); });
 
 const RAW_EXERCISES_DATA = `Air squat;Quadriceps, Grand fessier;Ischio-jambiers, Adducteurs, Mollets, Érecteurs du rachis;Aucun
+Traction;Grand dorsal, Biceps, Rhomboïdes;Deltoïdes postérieurs, Trapèzes inférieurs, Abdominaux;Barre de traction
 Donkey kick;Grand fessier;Ischio-jambiers (supérieur), Érecteurs du rachis (stabilisation);Aucun (ou anneau de cheville)
 Extension hanche poulie basse;Grand fessier;Ischio-jambiers, Érecteurs du rachis;Poulie basse, Courroie cheville
 Extension mollets assis barre;Gastrocnémien (mollet);Soléaire (mollet);Barre, Banc
@@ -486,7 +437,7 @@ Squat barre devant front;Quadriceps;Grand fessier, Ischio-jambiers, Érecteurs d
 Squat bulgare halteres;Quadriceps, Grand fessier;Ischio-jambiers, Mollets, Abdominaux (stabilisation);Halteres, Banc
 Squat goblet;Quadriceps;Grand fessier, Ischio-jambiers, Abdominaux, Érecteurs du rachis;Haltère/Kettlebell
 Squat pistol;Quadriceps, Grand fessier;Ischio-jambiers, Mollets, Abdominaux (stabilisation);Aucun (ou poids du corps)
-Squat statique contre murchaise;Quadriceps, Grand fessier;Ischio-jambiers, Adducteurs, Érecteurs du rachis;Mur (et éventuellement medecine ball)
+Squat statique contre mur;Quadriceps, Grand fessier;Ischio-jambiers, Adducteurs, Érecteurs du rachis;Mur (et éventuellement medecine ball)
 Squat sur banc;Quadriceps, Grand fessier;Ischio-jambiers, Adducteurs, Érecteurs du rachis;Banc
 Zercher deadlift;Quadriceps, Grand fessier, Érecteurs du rachis;Ischio-jambiers, Trapèzes, Avant-bras, Abdominaux;Barre
 Zercher squat;Quadriceps, Grand fessier;Ischio-jambiers, Érecteurs du rachis, Abdominaux;Barre
@@ -550,7 +501,6 @@ Tirage vertical prise inversee;Grand dorsal (épaisseur), Biceps;Deltoïdes post
 Tirage vertical prise serree;Grand dorsal (épaisseur), Biceps;Deltoïdes postérieurs, Trapèzes inférieurs, Grand rond;Machine à poulie haute, Barre étroite
 Traction assiste elastique;Grand dorsal, Biceps, Rhomboïdes;Deltoïdes postérieurs, Trapèzes inférieurs, Abdominaux;Barre de traction, Elastique
 Traction assistee avec banc;Grand dorsal, Biceps, Rhomboïdes;Deltoïdes postérieurs, Trapèzes inférieurs;Machine à traction assistée
-Traction dos;Grand dorsal, Biceps, Rhomboïdes;Deltoïdes postérieurs, Trapèzes inférieurs, Abdominaux;Barre de traction
 Traction prise neutre;Grand dorsal (épaisseur), Biceps, Brachial;Deltoïdes postérieurs, Rhomboïdes, Trapèzes inférieurs;Barre de traction parallèle
 Developpe arnold;Deltoïdes (antérieur, médial), Trapèzes (supérieur);Deltoïde postérieur, Triceps;Halteres, Banc
 Developpe epaule halteres;Deltoïdes antérieur, Triceps;Deltoïdes médial, Trapèzes (supérieur), Grand pectoral (claviculaire);Halteres, Banc
@@ -580,7 +530,7 @@ Developpe couche halteres;Grand pectoral (sternal/claviculaire), Triceps;Deltoï
 Developpe couche larsen;Grand pectoral, Triceps;Deltoïdes antérieur, Dentelé antérieur;Banc, Barre (pas d'appui pieds)
 Developpe couche prise inversee;Grand pectoral (sternal), Triceps (partie médiale/latérale);Deltoïdes antérieur, Dentelé antérieur;Barre, Banc
 Developpe couche serre avec halteres;Grand pectoral (sternal), Triceps;Deltoïdes antérieur;Banc plat, Halteres (prise serrée)
-Developpe couche;Grand pectoral (sternal), Triceps;Deltoïdes antérieur, Dentelé antérieur;Barre/Halteres, Banc plat
+Developpe couche barre;Grand pectoral (sternal), Triceps;Deltoïdes antérieur, Dentelé antérieur;Barre/Halteres, Banc plat
 Developpe debout pectoraux elastique;Grand pectoral, Deltoïdes antérieur;Triceps, Dentelé antérieur;Elastique
 Developpe decline avec elastique;Grand pectoral (inférieur), Triceps;Deltoïdes antérieur;Elastique, Banc décliné
 Developpe decline barre;Grand pectoral (inférieur), Triceps;Deltoïdes antérieur, Dentelé antérieur;Banc décliné, Barre
@@ -625,7 +575,7 @@ Elevations laterales (poulie);Deltoïdes médial;Trapèzes (supérieur), Deltoï
 Elevations frontales (poulie);Deltoïdes antérieur;Grand pectoral (claviculaire), Trapèzes (supérieur);Poulie basse
 Developpe militaire a la poulie;Deltoïdes antérieur, Triceps;Deltoïdes médial, Trapèzes;Poulie basse, Banc
 Elevations laterales a la poulie;Deltoïdes médial;Trapèzes (supérieur), Deltoïde antérieur;Deux poulies basses
-Presse jammer arm (selon angle);Pectoraux (selon angle) ou Deltoïdes/Triceps (vertical);Triceps, Deltoïdes, Dentelé antérieur;Machine Jammer Arm
+Presse jammer arm (incliné);Pectoraux;Triceps, Deltoïdes, Dentelé antérieur;Machine Jammer Arm
 Tirage vertical (unilateral);Grand dorsal, Biceps;Deltoïdes postérieurs, Rhomboïdes, Trapèzes inférieurs;Poulie haute, Poignée
 Tractions pronation (chin-ups);Grand dorsal, Biceps, Brachial;Rhomboïdes, Deltoïdes postérieurs, Trapèzes inférieurs;Barre de traction
 Rowing horizontal jammer arm;Grand dorsal, Rhomboïdes, Trapèzes;Deltoïdes postérieurs, Biceps, Érecteurs du rachis;Machine Jammer Arm (horizontal)
@@ -641,7 +591,6 @@ Flexion des jambes allonge (leg curl) au sol;Ischio-jambiers;Mollets;Aucun (ou b
 Extension inverse (back extension) sur banc;Érecteurs du rachis, Grand fessier;Ischio-jambiers, Adducteurs;Banc à lombaires/hyperextension
 Flexions lombaires au banc;Érecteurs du rachis;Grand fessier, Ischio-jambiers;Banc à lombaires
 Abduction de hanche a la poulie;Moyen fessier, Petit fessier;Tenseur du fascia lata;Poulie basse, Courroie cheville
-Adduction de hanche a la poulie;Adducteurs (Grand adducteur, Long/Court);Pectiné, Gracile;Poulie basse, Courroie cheville
 Lever de jambe lateral (abduction);Moyen fessier, Petit fessier;Tenseur du fascia lata;Aucun
 Lever de jambe sur le cote (adduction);Adducteurs;Grand droit de l'abdomen (stabilisation);Aucun
 Squat partiel (pin squat) dans jammer;Quadriceps, Grand fessier (sur amplitude réduite);Ischio-jambiers, Érecteurs du rachis, Abdominaux;Machine Jammer Arm, butoirs
@@ -656,6 +605,11 @@ Extension des triceps a la poulie basse;Triceps;-;Poulie basse, Barre/Cordage
 Flexions de poignets;Fléchisseurs des avant-bras (Fléchisseurs du carpe);-;Barre/Halteres
 Extensions de poignets;Extenseurs des avant-bras (Extenseurs du carpe);-;Barre/Halteres
 Burpees;Grand pectoral, Triceps, Deltoïdes, Quadriceps;Ischio-jambiers, Fessiers, Abdominaux, Cardio;Aucun
-Pompes en t;Grand pectoral, Triceps, Deltoïdes, Obliques;Abdominaux, Dentelé antérieur, Érecteurs du rachis;Aucun
 Renegade row;Grand dorsal, Rhomboïdes, Deltoïdes postérieurs, Abdominaux;Triceps, Biceps, Grand pectoral (stabilisation);Halteres
-Rowing vertical (upright row);Deltoïdes médial, Trapèzes (supérieur);Deltoïdes antérieur, Biceps, Angulaire de l'omoplate;Barre/Halteres/Elastique`;
+Bobine Andrieu;Avant bras;-;Bobine andrieu
+Hand Grip;Avant bras, Main;-;Hand Grip
+Wrist curl pronation;Avant bras, poignet;-;Halteres
+Wrist curl supination;Avant bras, poignet;-;Halteres
+Flexion du cou;Cou;-;Aucun, Harnais de cou + poulie haute
+Extension du cou;Nuque;-;Aucun, Harnais de cou + poids
+Rowing vertical (upright row);Deltoïdes médial, Trapèzes (supérieur);Deltoïdes antérieur, Biceps, Angulaire de l'omoplate;Barre EZ/Halteres/Elastique`;
