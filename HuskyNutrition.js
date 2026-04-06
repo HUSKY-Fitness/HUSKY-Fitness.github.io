@@ -310,18 +310,35 @@ function addEntryToLog(name, k, p, c, f) {
    ========================================= */
 
 function applyGoalTemplate() {
-    const type = document.getElementById('goal-type').value;
-    const musc = document.getElementById('goal-muscle').value;
-    const fat = document.getElementById('goal-fat').value;
-    let adj = 0, prot = 1.6;
-    if (type === 'cut') {
-        adj = -15; if(fat === 'med') adj = -20; if(fat === 'high') adj = -25; prot = 2.0;
-    } else if (type === 'maint') { adj = 0; prot = 1.8;
-    } else if (type === 'bulk') {
-        adj = 15; if(fat === 'high') adj = 10; if(fat === 'low') adj = 20; prot = 2.0;
-    }
-    document.getElementById('calc-adjust-percent').value = adj;
-    document.getElementById('calc-prot-g').value = prot;
+    const type   = document.getElementById('goal-type').value;   // 'cut' | 'maint' | 'bulk'
+    const muscle = document.getElementById('goal-muscle').value; // 'low' | 'med' | 'high'
+    const fat    = document.getElementById('goal-fat').value;    // 'low' | 'med' | 'high'
+
+    // Table de correspondance exacte issue du tableau
+    // Structure : LOOKUP[objectif][muscle][gras] = { adj, prot, lipid }
+    const LOOKUP = {
+        cut: {
+            low:  { low: {adj:-15, prot:1.8, lipid:0.9}, med: {adj:-20, prot:2.0, lipid:1.0}, high: {adj:-25, prot:2.2, lipid:1.1} },
+            med:  { low: {adj:-15, prot:2.0, lipid:0.9}, med: {adj:-20, prot:2.2, lipid:1.0}, high: {adj:-25, prot:2.4, lipid:1.1} },
+            high: { low: {adj:-15, prot:2.2, lipid:0.9}, med: {adj:-20, prot:2.4, lipid:1.0}, high: {adj:-25, prot:2.6, lipid:1.1} }
+        },
+        maint: {
+            low:  { low: {adj:0, prot:1.4, lipid:0.9}, med: {adj:0, prot:1.6, lipid:1.0}, high: {adj:0, prot:1.8, lipid:1.1} },
+            med:  { low: {adj:0, prot:1.7, lipid:0.9}, med: {adj:0, prot:1.9, lipid:1.0}, high: {adj:0, prot:2.1, lipid:1.1} },
+            high: { low: {adj:0, prot:2.0, lipid:0.9}, med: {adj:0, prot:2.2, lipid:1.0}, high: {adj:0, prot:2.4, lipid:1.1} }
+        },
+        bulk: {
+            low:  { low: {adj:20, prot:1.8, lipid:1.0}, med: {adj:15, prot:2.0, lipid:1.1}, high: {adj:10, prot:2.1, lipid:1.2} },
+            med:  { low: {adj:20, prot:2.0, lipid:1.0}, med: {adj:15, prot:2.2, lipid:1.1}, high: {adj:10, prot:2.4, lipid:1.2} },
+            high: { low: {adj:20, prot:2.3, lipid:1.0}, med: {adj:15, prot:2.5, lipid:1.1}, high: {adj:10, prot:2.6, lipid:1.2} }
+        }
+    };
+
+    const result = LOOKUP[type][muscle][fat];
+
+    document.getElementById('calc-adjust-percent').value = result.adj;
+    document.getElementById('calc-prot-g').value         = result.prot;
+    document.getElementById('calc-fat-g').value          = result.lipid;
 }
 
 function saveCalculation() {
