@@ -595,7 +595,32 @@ function initStatsDates() {
 }
 
 /**
- * Calcule et affiche les tendances.
+ * Trouve l'entrée la plus proche AVANT ou ÉGALE à une date donnée.
+ * Retourne null si aucune entrée ne correspond.
+ * @param {Array} entries - liste des saisies
+ * @param {string} targetDate - date cible au format YYYY-MM-DD
+ */
+function findClosestEntry(entries, targetDate) {
+    // On filtre toutes les entrées dont la date est <= à la date cible
+    const candidates = entries.filter(function (e) {
+        return e.date <= targetDate;
+    });
+
+    if (candidates.length === 0) {
+        return null;
+    }
+
+    // On prend la plus récente parmi celles qui sont <= targetDate
+    candidates.sort(function (a, b) {
+        return new Date(b.date) - new Date(a.date);
+    });
+
+    return candidates[0];
+}
+
+/**
+ * Calcule et affiche les tendances entre deux dates.
+ * Si aucune saisie n'existe à la date exacte, prend la saisie précédente la plus proche.
  */
 function computeStats() {
     const fromDate = document.getElementById('statsFromDate').value;
@@ -608,28 +633,53 @@ function computeStats() {
         return;
     }
 
-    const entries = loadEntries();
-    const fromEntry = entries.find(e => e.date === fromDate);
-    const toEntry = entries.find(e => e.date === toDate);
-
-    if (!fromEntry || !toEntry) {
-        container.textContent = 'Impossible de trouver les saisies pour ces dates.';
+    if (fromDate > toDate) {
+        container.textContent = 'La date de début doit être antérieure à la date de fin.';
         return;
     }
 
+    const entries = loadEntries();
+
+    // Cherche la saisie à la date exacte, sinon la plus proche avant
+    const fromEntry = findClosestEntry(entries, fromDate);
+    const toEntry = findClosestEntry(entries, toDate);
+
+    if (!fromEntry) {
+        container.textContent = 'Aucune saisie trouvée avant la date de début.';
+        return;
+    }
+
+    if (!toEntry) {
+        container.textContent = 'Aucune saisie trouvée avant la date de fin.';
+        return;
+    }
+
+    if (fromEntry.date === toEntry.date) {
+        container.textContent = 'Les deux dates pointent vers la même saisie (' + fromEntry.date + '). Aucune tendance à calculer.';
+        return;
+    }
+
+    // Affiche un bandeau informatif avec les dates de saisies réellement utilisées
+    const infoDiv = document.createElement('div');
+    infoDiv.style.cssText = 'background:#262626;padding:10px;border-radius:5px;margin-bottom:12px;font-size:0.85rem;color:#aaa;border:1px solid #444;';
+    infoDiv.textContent = 'Comparaison : ' + fromEntry.date + ' → ' + toEntry.date;
+    container.appendChild(infoDiv);
+
     const rows = [];
 
+    // Calcul de la tendance du poids
     if (fromEntry.weight != null || toEntry.weight != null) {
         const diff = (toEntry.weight || 0) - (fromEntry.weight || 0);
         rows.push({ label: 'Poids (kg)', diff: diff });
     }
 
+    // Calcul des tendances pour toutes les mensurations présentes dans l'une ou l'autre saisie
     const keys = new Set([
         ...Object.keys(fromEntry.measures || {}),
         ...Object.keys(toEntry.measures || {})
     ]);
 
-    keys.forEach(key => {
+    keys.forEach(function (key) {
         const valFrom = fromEntry.measures[key] || 0;
         const valTo = toEntry.measures[key] || 0;
         const diff = valTo - valFrom;
@@ -641,13 +691,14 @@ function computeStats() {
         return;
     }
 
-    rows.forEach(r => {
+    // Affichage des résultats avec code couleur
+    rows.forEach(function (r) {
         const div = document.createElement('div');
         div.className = 'stats-row';
         if (r.diff > 0) div.classList.add('positive');
         if (r.diff < 0) div.classList.add('negative');
         const sign = r.diff > 0 ? '+' : '';
-        div.textContent = `${r.label} : ${sign}${r.diff.toFixed(1)}`;
+        div.textContent = r.label + ' : ' + sign + r.diff.toFixed(1);
         container.appendChild(div);
     });
 }
